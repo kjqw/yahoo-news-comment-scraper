@@ -14,6 +14,11 @@ def init_driver(TIMEOUT: int = 10) -> webdriver:
     """
     WebDriverを初期化する
 
+    Parameters
+    ----------
+    TIMEOUT : int, optional
+        ページのロード待ち時間（秒）を設定, デフォルトは10秒
+
     Returns
     -------
     driver : webdriver
@@ -21,18 +26,20 @@ def init_driver(TIMEOUT: int = 10) -> webdriver:
     """
     # Chromeオプションの設定
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--headless")  # ヘッドレスモードを有効にする（GUIなし）
+    chrome_options.add_argument("--no-sandbox")  # サンドボックスモードを無効にする
+    chrome_options.add_argument(
+        "--disable-dev-shm-usage"
+    )  # 共有メモリの使用を無効にする
     chrome_options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
-    )
+    )  # ユーザーエージェントを設定
 
     # WebDriverの設定
     driver = webdriver.Remote(
         command_executor="http://selenium:4444/wd/hub", options=chrome_options
     )
-    driver.set_page_load_timeout(TIMEOUT)
+    driver.set_page_load_timeout(TIMEOUT)  # ページロードのタイムアウトを設定
 
     return driver
 
@@ -53,7 +60,6 @@ def get_comment_sections(
     articles : list[selenium.webdriver.remote.webelement.WebElement]
         コメントセクションのリスト
     """
-
     # class="viewableWrapper"を持つarticleタグを取得
     articles = driver.find_elements(By.CSS_SELECTOR, "article.viewableWrapper")
 
@@ -80,11 +86,73 @@ def read_xpath_json(file_path: Path) -> dict:
     return xpath_dict
 
 
+def list_to_xpath(base_xpath: str, current_indices: list[int]) -> str:
+    """
+    与えられたリストを元に、base_xpathの[i\d+]を置換してXPathを生成する関数。
+
+    Parameters
+    ----------
+    base_xpath : str
+        プレースホルダを含むベースのXPath
+    current_indices : list[int]
+        プレースホルダを置換するためのインデックスリスト
+
+    Returns
+    -------
+    str
+        インデックスで置換されたXPath
+    """
+    for i, current_index in enumerate(current_indices):
+        base_xpath = base_xpath.replace(
+            f"[i{i+1}]", f"[{current_index}]"
+        )  # プレースホルダをインデックスで置換
+    return base_xpath
+
+
+def generate_next_list(
+    current_indices: list[int], max_indices: list[int]
+) -> list[int] | None:
+    """
+    与えられたリストを次の組み合わせに更新する関数。
+
+    Parameters
+    ----------
+    current_indices : list[int]
+        現在のインデックスのリスト
+    max_indices : list[int]
+        各プレースホルダの最大値リスト
+
+    Returns
+    -------
+    list[int] | None
+        次のインデックスリスト、最大値を超えた場合はNoneを返す
+    """
+    # 現在のインデックスの一部が最大値を超えているか、全てが最大値に達している場合はNoneを返す
+    if (
+        any(
+            current_index > max_current_index
+            for current_index, max_current_index in zip(current_indices, max_indices)
+        )
+        or current_indices == max_indices
+    ):
+        return None
+
+    # 末尾から始めて桁上げを行う
+    for i in range(len(current_indices) - 1, -1, -1):
+        if current_indices[i] < max_indices[i]:
+            current_indices[i] += 1  # インデックスをインクリメント
+            break
+        else:
+            current_indices[i] = 1  # インデックスをリセット
+
+    return current_indices
+
+
 def find_all_combinations(
-    driver: webdriver, base_xpath: str
+    driver: webdriver, base_xpath: str, max_indices: list[int]
 ) -> tuple[list[str], list[selenium.webdriver.remote.webelement.WebElement]]:
     """
-    指定されたXPathで[i\d+]のすべての組み合わせに一致する要素と、そのXPathを取得する
+    指定されたXPathで[i\d+]のすべての組み合わせに一致する要素と、そのXPathを取得する。
 
     Parameters
     ----------
@@ -92,60 +160,69 @@ def find_all_combinations(
         記事のコメントページを開いているWebDriverオブジェクト
     base_xpath : str
         [i\d+]のプレースホルダを含むXPathのベースパス
+    max_indices : list[int]
+        プレースホルダの最大値のリスト
 
     Returns
     -------
     tuple[list[str], list[selenium.webdriver.remote.webelement.WebElement]]
-        該当するすべてのXPathと、その要素のリスト
+        該当するすべてのXPathと、その要素のリスト。
     """
-    elements_with_xpath = []
 
-    # [i\d+]に一致する部分を全て見つける
-    placeholders = re.findall(r"\[i\d+\]", base_xpath)
-
-    def recursive_find(current_xpath: str, index: int) -> None:
+    def generate_xpath_combinations(
+        base_xpath: str, max_indices: list[int]
+    ) -> list[str]:
         """
-        再帰的にプレースホルダを置換して要素を探索する
+        すべてのインデックスの組み合わせに基づいてXPathを生成する。
 
         Parameters
         ----------
-        current_xpath : str
-            現在のXPath
-        index : int
-            現在のプレースホルダのインデックス
+        base_xpath : str
+            [i\d+]のプレースホルダを含むXPathのベースパス。
+        max_indices : list[int]
+            プレースホルダの最大値のリスト。
+
+        Returns
+        -------
+        list[str]
+            生成されたすべてのXPathのリスト。
         """
-        # ベースケース: すべてのプレースホルダを置換した場合
-        if index >= len(placeholders):
-            found_elements = driver.find_elements(By.XPATH, current_xpath)
-            if found_elements:
-                elements_with_xpath.extend(
-                    (current_xpath, element) for element in found_elements
-                )
-            return
+        # プレースホルダの部分を正規表現で取得
+        placeholders = re.findall(r"\[i(\d+)\]", base_xpath)
 
-        # 置換するプレースホルダを取り出す
-        placeholder = placeholders[index]
-        i = 1
+        # 数字部分だけを取得して、整数に変換
+        placeholder_indices = [int(match) for match in placeholders]
+        max_placeholder_index = max(placeholder_indices)
 
-        while True:
-            # プレースホルダを実際のインデックスで置換
-            xpath_with_index = current_xpath.replace(placeholder, f"[{i}]", 1)
-            found_elements = driver.find_elements(By.XPATH, xpath_with_index)
+        # プレースホルダの数だけ1で初期化したリストを生成
+        current_indices = [1 for _ in range(max_placeholder_index)]
+        xpaths = []
 
-            if not found_elements:
-                break
+        # すべての組み合わせを生成
+        while current_indices is not None:
+            xpath = list_to_xpath(base_xpath, current_indices)
+            xpaths.append(xpath)  # 生成されたXPathをリストに追加
+            current_indices = generate_next_list(current_indices, max_indices)
 
-            # 次のプレースホルダの組み合わせを再帰的に探索
-            recursive_find(xpath_with_index, index + 1)
-            i += 1
+        # 重複を削除
+        xpaths = list(set(xpaths))
 
-    # 最初のプレースホルダから探索を開始
-    recursive_find(base_xpath, 0)
+        return xpaths
 
-    # XPathと要素をそれぞれのリストに分解
-    xpaths, elements = zip(*elements_with_xpath) if elements_with_xpath else ([], [])
+    # すべてのXPathを生成
+    all_xpaths = generate_xpath_combinations(base_xpath, max_indices)
 
-    return list(xpaths), list(elements)
+    # 生成されたXPathに一致する要素を検索
+    found_elements = []
+    matching_xpaths = []
+
+    for xpath in all_xpaths:
+        elements = driver.find_elements(By.XPATH, xpath)  # 各XPathに一致する要素を検索
+        if elements:
+            matching_xpaths.append(xpath)
+            found_elements.append(elements)
+
+    return matching_xpaths, found_elements
 
 
 def push_reply_display_button(driver: webdriver, button_xpath: str) -> None:
@@ -160,16 +237,16 @@ def push_reply_display_button(driver: webdriver, button_xpath: str) -> None:
         返信表示ボタンのXPath
     """
 
-    xpaths, elements = find_all_combinations(driver, button_xpath)
+    xpaths, elements = find_all_combinations(driver, button_xpath, [1, 10])
     for xpath in xpaths:
         try:
-            element = driver.find_element(By.XPATH, xpath)
-            element.click()
+            element = driver.find_element(By.XPATH, xpath)  # XPathに一致する要素を取得
+            element.click()  # 要素をクリック
             print(f"Clicked: {xpath}")
         except NoSuchElementException:
-            continue
+            continue  # 要素が見つからない場合は次へ
         except TimeoutException:
-            continue
+            continue  # タイムアウトが発生した場合も次へ
 
 
 def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
@@ -202,11 +279,3 @@ def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
 
     # PurePosixPathオブジェクトをXPath形式の文字列に変換
     return str(relative_path)
-
-
-if __name__ == "__main__":
-    # 使用例
-    base_xpath = "/html/body/div[1]/div[2]"
-    target_xpath = "/html/body/div[1]/div[2]/span"
-
-    print(get_relative_xpath(base_xpath, target_xpath))
