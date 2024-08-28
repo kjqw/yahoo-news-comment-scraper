@@ -1,6 +1,7 @@
 import json
 import re
 from pathlib import Path, PurePosixPath
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import selenium
 from bs4 import BeautifulSoup
@@ -8,6 +9,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 
 
 def init_driver(TIMEOUT: int = 10) -> webdriver:
@@ -44,11 +46,9 @@ def init_driver(TIMEOUT: int = 10) -> webdriver:
     return driver
 
 
-def get_comment_sections(
-    driver: webdriver,
-) -> list[selenium.webdriver.remote.webelement.WebElement]:
+def get_comment_sections(driver: webdriver) -> list[WebElement]:
     """
-    コメントセクションのリストを取得する
+    コメントセクションの親要素のリストを取得する
 
     Parameters
     ----------
@@ -57,13 +57,16 @@ def get_comment_sections(
 
     Returns
     -------
-    articles : list[selenium.webdriver.remote.webelement.WebElement]
-        コメントセクションのリスト
+    parent_sections : list[WebElement]
+        コメントセクションの親要素のリスト
     """
     # class="viewableWrapper"を持つarticleタグを取得
     articles = driver.find_elements(By.CSS_SELECTOR, "article.viewableWrapper")
 
-    return articles
+    # 各コメントセクションの親要素を取得
+    parent_sections = [article.find_element(By.XPATH, "..") for article in articles]
+
+    return parent_sections
 
 
 def read_xpath_json(file_path: Path) -> dict:
@@ -150,7 +153,7 @@ def generate_next_list(
 
 def find_all_combinations(
     driver: webdriver, base_xpath: str, max_indices: list[int]
-) -> tuple[list[str], list[selenium.webdriver.remote.webelement.WebElement]]:
+) -> tuple[list[str], list[WebElement]]:
     """
     指定されたXPathで[i\d+]のすべての組み合わせに一致する要素と、そのXPathを取得する。
 
@@ -165,7 +168,7 @@ def find_all_combinations(
 
     Returns
     -------
-    tuple[list[str], list[selenium.webdriver.remote.webelement.WebElement]]
+    tuple[list[str], list[WebElement]]
         該当するすべてのXPathと、その要素のリスト。
     """
 
@@ -279,3 +282,39 @@ def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
 
     # PurePosixPathオブジェクトをXPath形式の文字列に変換
     return str(relative_path)
+
+
+def open_page(driver: webdriver, url: str, order: str, page: int) -> None:
+    """
+    ページを開く関数
+
+    Parameters
+    ----------
+    driver : webdriver
+        WebDriverオブジェクト
+    url : str
+        開くページのURL
+    order : str
+        ソート順
+    page : int
+        開くページ番号
+    """
+    # URLを解析
+    url_parts = urlparse(url)
+
+    # 既存のクエリパラメータを解析
+    query_params = parse_qs(url_parts.query)
+
+    # 新しいパラメータを追加または更新
+    query_params["order"] = [order]
+    query_params["page"] = [str(page)]
+
+    # 新しいクエリ文字列を生成
+    new_query = urlencode(query_params, doseq=True)
+
+    # 新しいURLを構築
+    new_url_parts = url_parts._replace(query=new_query)
+    new_url = urlunparse(new_url_parts)
+
+    # ページを開く
+    driver.get(new_url)
