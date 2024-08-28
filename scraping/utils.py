@@ -207,8 +207,8 @@ def find_all_combinations(
             xpaths.append(xpath)  # 生成されたXPathをリストに追加
             current_indices = generate_next_list(current_indices, max_indices)
 
-        # 重複を削除
-        xpaths = list(set(xpaths))
+        # 重複を削除してソート
+        xpaths = sorted(list(set(xpaths)))
 
         return xpaths
 
