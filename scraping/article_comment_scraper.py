@@ -5,7 +5,7 @@ from pathlib import Path
 import utils
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from xpath import *
+from xpath_article_page import *
 
 
 class GeneralComment:
