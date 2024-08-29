@@ -16,7 +16,7 @@ def init_driver(TIMEOUT: int = 10) -> webdriver:
 
     Parameters
     ----------
-    TIMEOUT : int, optional
+    TIMEOUT : int, Optional
         ページのロード待ち時間（秒）を設定する
 
     Returns
