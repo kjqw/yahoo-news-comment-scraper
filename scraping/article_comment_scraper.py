@@ -121,37 +121,34 @@ def get_reply_comment_sections(
         返信コメントのセクションのリスト
     """
     # XPathの相対パスを取得
-    relative_xpath_reply_count = utils.get_relative_xpath(
-        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_GENERAL_COMMENT_REPLY_COUNT
-    )
-    relative_xpath_reply_display_button = utils.get_relative_xpath(
-        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_GENERAL_COMMENT_REPLY_BUTTON
-    )
-    relative_xpath_reply_display_button_more = utils.get_relative_xpath(
-        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE
-    )
     relative_xpath_reply_comment_sections = utils.get_relative_xpath(
         XPATH_GENERAL_COMMENT_SECTIONS, XPATH_REPLY_COMMENT_SECTIONS
     )
 
     # 返信の数を取得
     reply_count = int(
-        webelement.find_elements(By.XPATH, relative_xpath_reply_count)[0].text
+        webelement.find_element(
+            By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_COUNT
+        ).text
     )
 
     # 返信表示ボタンをクリック
-    webelement.find_elements(By.XPATH, relative_xpath_reply_display_button)[0].click()
+    webelement.find_element(
+        By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON
+    ).click()
 
     reply_comments = []
     cnt = 10
     while (
-        webelement.find_elements(By.XPATH, relative_xpath_reply_display_button_more)
+        webelement.find_elements(
+            By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE
+        )
         or cnt < max_replies
     ):
         # もっと返信を表示するボタンをクリック
-        webelement.find_elements(By.XPATH, relative_xpath_reply_display_button_more)[
-            0
-        ].click()
+        webelement.find_element(
+            By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE
+        ).click()
         cnt += 10
 
     # 返信コメントのセクションを取得
