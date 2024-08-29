@@ -6,17 +6,11 @@ XPATH_ARTICLE_POSTED_TIME = (
 )
 
 # コメント数
-XPATH_PAGE_COMMENT_COUNT_1 = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[6]/div/p"
+XPATH_TOTAL_COMMENT_COUNT_WITH_REPLY = (
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[2]/div/p/span"
 )
-XPATH_PAGE_COMMENT_COUNT_OTHERS = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p"
-)
-XPATH_TOTAL_COMMENT_COUNT_1 = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p"
-)
-XPATH_TOTAL_COMMENT_COUNT_OTHERS = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[2]/div/p"
+XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = (
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span"
 )
 
 # 専門家コメントの要素
