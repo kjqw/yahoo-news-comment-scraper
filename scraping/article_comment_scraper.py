@@ -308,9 +308,13 @@ def save_data(data: dict[str, str | list[GeneralComment]], save_path: Path) -> N
 
 
 if __name__ == "__main__":
-    url = "https://news.yahoo.co.jp/articles/ddae7ca185c389a92d2c1136a699a32fe4415094/comments"
-    max_comments = 10
+    url = "https://news.yahoo.co.jp/articles/a9e7e7f9c3f25c2becdefa309c22e1f8cb60240f/comments"
+    max_comments = 20
     max_replies = 5
 
-    comments = get_article_comments(url, max_comments, max_replies)
-    print(comments)
+    # コメントを取得
+    data = get_article_comments(url, max_comments, max_replies)
+
+    # データを保存
+    save_path = Path(__file__).parent / "data" / "comments.pkl"
+    save_data(data, save_path)
