@@ -14,3 +14,8 @@ kjqw@DESKTOP-V5HNETV ~/university/B4/study/yahoo_news %
 ## 返信を表示するボタンを押した後に表示されるはずの要素が取得できない
 
 `find_all_combinations`関数で、複数のプレースホルダーがあるときにバグっていそう。
+解決
+
+## urlが存在しなくなる
+
+2024/8/29夜に<https://news.yahoo.co.jp/articles/ddae7ca185c389a92d2c1136a699a32fe4415094/comments>にアクセスすると、開けていたはずのコメントページが開けなくなった。昼は開けていた。<https://news.yahoo.co.jp/articles/ddae7ca185c389a92d2c1136a699a32fe4415094>のように記事のページも開けなくなってた。このurlはおそらく1週間ほど前に取得したものであるから、記事が削除されたのかもしれない。
