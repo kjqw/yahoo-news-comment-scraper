@@ -69,26 +69,6 @@ def get_comment_sections(driver: webdriver) -> list[WebElement]:
     return parent_sections
 
 
-def read_xpath_json(file_path: Path) -> dict:
-    """
-    指定されたパスからXPathが記述されたJSONファイルを読み込み、辞書形式で返す
-
-    Parameters
-    ----------
-    file_path : Path
-        読み込むJSONファイルのパス
-
-    Returns
-    -------
-    dict
-        JSONファイルを読み込んだ辞書
-    """
-    with file_path.open("r", encoding="utf-8") as f:
-        xpath_dict = json.load(f)
-
-    return xpath_dict
-
-
 def list_to_xpath(base_xpath: str, current_indices: list[int]) -> str:
     """
     与えられたリストを元に、base_xpathの[i\d+]を置換してXPathを生成する関数。
@@ -226,30 +206,6 @@ def find_all_combinations(
             found_elements.append(elements)
 
     return matching_xpaths, found_elements
-
-
-def push_reply_display_button(driver: webdriver, button_xpath: str) -> None:
-    """
-    返信表示ボタンを押す
-
-    Parameters
-    ----------
-    driver : webdriver
-        記事のコメントページを開いているWebDriverオブジェクト
-    button_xpath : str
-        返信表示ボタンのXPath
-    """
-
-    xpaths, elements = find_all_combinations(driver, button_xpath, [1, 10])
-    for xpath in xpaths:
-        try:
-            element = driver.find_element(By.XPATH, xpath)  # XPathに一致する要素を取得
-            element.click()  # 要素をクリック
-            print(f"Clicked: {xpath}")
-        except NoSuchElementException:
-            continue  # 要素が見つからない場合は次へ
-        except TimeoutException:
-            continue  # タイムアウトが発生した場合も次へ
 
 
 def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
