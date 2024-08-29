@@ -1,12 +1,10 @@
-import json
+import inspect
 import re
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-import selenium
-from bs4 import BeautifulSoup
+import xpath
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
