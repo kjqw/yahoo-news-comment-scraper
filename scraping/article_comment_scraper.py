@@ -289,6 +289,24 @@ def get_article_comments(
         driver.quit()
 
 
+def save_data(data: dict[str, str | list[GeneralComment]], save_path: Path) -> None:
+    """
+    スクレイピングしたデータを保存する関数。
+
+    Parameters
+    ----------
+    data : dict[str, str | list[GeneralComment]]
+        スクレイピングしたデータ
+    save_path : Path
+        保存先のパス
+    """
+    # 保存先のディレクトリが存在しない場合は作成
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(save_path, "wb") as f:
+        pickle.dump(data, f)
+
+
 if __name__ == "__main__":
     url = "https://news.yahoo.co.jp/articles/ddae7ca185c389a92d2c1136a699a32fe4415094/comments"
     max_comments = 10
