@@ -20,12 +20,12 @@
 
 ## 実行手順
 
-バグ改善中
+- `scraping/article_comment_scraper.py`を実行することで、特定のYahoo!ニュースのコメントをスクレイピングし、データを`pkl`形式で保存することができます。
 
 ### 主要ファイル
 
-- `scraping/comment_scraper.py`: Yahoo!ニュースからコメントをスクレイピングするスクリプト。
-- `scraping/xpath.json`: スクレイピングに使用するXPathの定義ファイル。
+- `scraping/article_comment_scraper.py`: Yahoo!ニュースからコメントをスクレイピングするスクリプト。
+- `scraping/xpath.py`: スクレイピングに使用するXPathの定義ファイル。
 - `memo/`: 開発中のメモやバグ情報を記載したドキュメント。
 
 ## 今後の予定
