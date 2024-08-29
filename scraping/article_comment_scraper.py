@@ -1,8 +1,8 @@
+import pickle
 from collections import defaultdict
 from pathlib import Path
 
 import utils
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from xpath import *
