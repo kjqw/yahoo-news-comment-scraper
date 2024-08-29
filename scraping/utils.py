@@ -171,6 +171,10 @@ def find_all_combinations(
         # プレースホルダの部分を正規表現で取得
         placeholders = re.findall(r"\[i(\d+)\]", base_xpath)
 
+        # プレースホルダが存在しない場合は、base_xpathをそのままリストにして返す
+        if not placeholders:
+            return [base_xpath]
+
         # 数字部分だけを取得して、整数に変換
         placeholder_indices = [int(match) for match in placeholders]
         max_placeholder_index = max(placeholder_indices)
