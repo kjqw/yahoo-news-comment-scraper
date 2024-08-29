@@ -12,12 +12,12 @@ from selenium.webdriver.remote.webelement import WebElement
 
 def init_driver(TIMEOUT: int = 10) -> webdriver:
     """
-    WebDriverを初期化する
+    WebDriverを初期化する。
 
     Parameters
     ----------
     TIMEOUT : int, optional
-        ページのロード待ち時間（秒）を設定, デフォルトは10秒
+        ページのロード待ち時間（秒）を設定する
 
     Returns
     -------
@@ -46,7 +46,7 @@ def init_driver(TIMEOUT: int = 10) -> webdriver:
 
 def get_comment_sections(driver: webdriver) -> list[WebElement]:
     """
-    コメントセクションの親要素のリストを取得する
+    コメントセクションの親要素のリストを取得する。
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def generate_next_list(
     Returns
     -------
     list[int] | None
-        次のインデックスリスト、最大値を超えた場合はNoneを返す
+        次のインデックスリスト。最大値を超えた場合はNoneを返す。
     """
     # 現在のインデックスの一部が最大値を超えているか、全てが最大値に達している場合はNoneを返す
     if (
@@ -147,7 +147,7 @@ def find_all_combinations(
     Returns
     -------
     tuple[list[str], list[WebElement]]
-        該当するすべてのXPathと、その要素のリスト。
+        該当するすべてのXPathと、その要素のリスト
     """
 
     def generate_xpath_combinations(
@@ -159,14 +159,14 @@ def find_all_combinations(
         Parameters
         ----------
         base_xpath : str
-            [i\d+]のプレースホルダを含むXPathのベースパス。
+            [i\d+]のプレースホルダを含むXPathのベースパス
         max_indices : list[int]
-            プレースホルダの最大値のリスト。
+            プレースホルダの最大値のリスト
 
         Returns
         -------
         list[str]
-            生成されたすべてのXPathのリスト。
+            生成されたすべてのXPathのリスト
         """
         # プレースホルダの部分を正規表現で取得
         placeholders = re.findall(r"\[i(\d+)\]", base_xpath)
@@ -208,7 +208,7 @@ def find_all_combinations(
 
 def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
     """
-    base_xpathから見たtarget_xpathの相対パスを返す関数
+    base_xpathから見たtarget_xpathの相対パスを返す関数。
 
     Parameters
     ----------
@@ -221,11 +221,6 @@ def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
     -------
     str
         base_xpathから見たtarget_xpathの相対パス
-
-    Raises
-    ------
-    ValueError
-        base_xpathまたはtarget_xpathが不正な場合
     """
     # base_xpathとtarget_xpathをパースしてリストに分割
     base_path = PurePosixPath(base_xpath)
