@@ -237,37 +237,58 @@ def get_relative_xpath(base_xpath: str, target_xpath: str) -> str:
     return str(relative_path)
 
 
-def open_page(driver: webdriver, url: str, order: str, page: int) -> None:
+def open_page(driver: webdriver, url: str, page: int, order: str = "") -> None:
     """
-    ページを開く関数
+    指定されたURLのページを開く。
 
     Parameters
     ----------
-    driver : webdriver
+    driver : WebDriver
         WebDriverオブジェクト
     url : str
         開くページのURL
-    order : str
-        ソート順
     page : int
-        開くページ番号
-    """
-    # URLを解析
-    url_parts = urlparse(url)
+        開くページ番号。正の整数でない場合はページ番号を変更しない。
+    order : str, Optional
+        コメントの表示順。'newer' または 'recommended' の場合にのみ適用される。
 
-    # 既存のクエリパラメータを解析
+    Notes
+    -----
+    無効な `order` 値が指定された場合、'order' パラメータは変更されず、
+    無効な `page` 値が指定された場合、'page' パラメータは変更されません。
+    無効な値が入力された場合には、標準出力にその旨が表示されます。
+    """
+    # 有効なorder値のセット
+    valid_orders = {"newer", "recommended"}
+
+    # orderが有効な値か確認
+    if order and order not in valid_orders:
+        print(f"無効な`order`値: {order}")
+        print("有効な値は次のいずれかです: ", valid_orders)
+        order = ""
+
+    # pageが正の整数か確認
+    if not isinstance(page, int) or page <= 0:
+        print(f"無効な`page`値: {page}")
+        print("`page`は正の整数である必要があります。")
+        page = 0
+
+    # URLを解析してクエリパラメータを取得
+    url_parts = urlparse(url)
     query_params = parse_qs(url_parts.query)
 
-    # 新しいパラメータを追加または更新
-    query_params["order"] = [order]
-    query_params["page"] = [str(page)]
+    # orderが有効な場合にクエリパラメータを更新
+    if order:
+        query_params["order"] = [order]
 
-    # 新しいクエリ文字列を生成
+    # pageが有効な場合にクエリパラメータを更新
+    if page:
+        query_params["page"] = [str(page)]
+
+    # 新しいクエリ文字列を生成してURLを更新
     new_query = urlencode(query_params, doseq=True)
-
-    # 新しいURLを構築
     new_url_parts = url_parts._replace(query=new_query)
     new_url = urlunparse(new_url_parts)
 
-    # ページを開く
+    # 新しいURLでページを開く
     driver.get(new_url)
