@@ -1,11 +1,11 @@
+from collections import defaultdict
 from pathlib import Path
 
 import utils
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-
-XPATH_DICT = utils.read_xpath_json(Path(__file__).parent / "xpath.json")
+from xpath import *
 
 
 def get_reply_comment_sections(
@@ -27,35 +27,18 @@ def get_reply_comment_sections(
     list[WebElement]
         返信コメントのセクションのリスト
     """
-    # XPathを読み込む
-    xpath_comment_sections = XPATH_DICT["article_comment_page"]["general_comments"][
-        "comment_sections"
-    ]
-    xpath_reply_count = XPATH_DICT["article_comment_page"]["general_comments"][
-        "reply_count"
-    ]
-    xpath_reply_display_button = XPATH_DICT["article_comment_page"]["general_comments"][
-        "reply_display_button"
-    ]
-    xpath_reply_display_button_more = XPATH_DICT["article_comment_page"][
-        "general_comments"
-    ]["reply_display_button_more"]
-    xpath_reply_comment_sections = XPATH_DICT["article_comment_page"][
-        "general_comments"
-    ]["reply_comments"]["comment_sections"]
-
     # XPathの相対パスを取得
     relative_xpath_reply_count = utils.get_relative_xpath(
-        xpath_comment_sections, xpath_reply_count
+        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_GENERAL_COMMENT_REPLY_COUNT
     )
     relative_xpath_reply_display_button = utils.get_relative_xpath(
-        xpath_comment_sections, xpath_reply_display_button
+        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_GENERAL_COMMENT_REPLY_BUTTON
     )
     relative_xpath_reply_display_button_more = utils.get_relative_xpath(
-        xpath_comment_sections, xpath_reply_display_button_more
+        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE
     )
     relative_xpath_reply_comment_sections = utils.get_relative_xpath(
-        xpath_comment_sections, xpath_reply_comment_sections
+        XPATH_GENERAL_COMMENT_SECTIONS, XPATH_REPLY_COMMENT_SECTIONS
     )
 
     # 返信の数を取得
@@ -85,10 +68,11 @@ def get_reply_comment_sections(
     return reply_comments_sections
 
 
-def scrape_article_comments(
+def get_article_comments(
     url: str,
     max_comments: int,
     max_replies: int,
+    order: str = "newer",
     timeout: int = 10,
 ) -> list[dict[str, str]]:
     """
@@ -102,6 +86,10 @@ def scrape_article_comments(
         取得するコメントの最大数
     max_replies : int
         取得する返信の最大数
+    order : str, optional
+        コメントの表示順。 "newer" または "recommended" のいずれかを指定, by default "newer"
+    timeout : int, optional
+        WebDriverのタイムアウト時間, by default 10
 
     Returns
     -------
@@ -120,7 +108,16 @@ def scrape_article_comments(
         # コメントセクションのリストを取得
         comment_sections = utils.get_comment_sections(driver)
 
-        return comment_sections
+        data = defaultdict(str)
+        data["article_title"] = driver.find_element(By.XPATH, XPATH_ARTICLE_TITLE).text
+
+        return data
+
+        for comment_section in comment_sections:
+            # 返信コメントのセクションを取得
+            reply_comment_sections = get_reply_comment_sections(
+                comment_section, max_replies
+            )
 
     finally:
         driver.quit()
@@ -131,5 +128,5 @@ if __name__ == "__main__":
     max_comments = 10
     max_replies = 5
 
-    comments = scrape_article_comments(url, max_comments, max_replies)
+    comments = get_article_comments(url, max_comments, max_replies)
     print(comments)
