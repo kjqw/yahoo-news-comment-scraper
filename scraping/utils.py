@@ -205,7 +205,7 @@ def find_all_combinations(
         elements = driver.find_elements(By.XPATH, xpath)  # 各XPathに一致する要素を検索
         if elements:
             matching_xpaths.append(xpath)
-            found_elements.append(elements)
+            found_elements.extend(elements)
 
     return matching_xpaths, found_elements
 
