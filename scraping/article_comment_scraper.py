@@ -164,7 +164,7 @@ def get_article_comments(
     max_replies: int,
     order: str = "newer",
     timeout: int = 10,
-) -> list[dict[str, str]]:
+) -> dict[str, str | list[GeneralComment]]:
     """
     記事のコメントをスクレイピングする関数。
 
@@ -173,18 +173,18 @@ def get_article_comments(
     url : str
         記事のコメントページのURL
     max_comments : int
-        取得するコメントの最大数
+        取得するコメントの最大数。10の倍数以外の数を入力すると、10の倍数に切り上げて処理される。
     max_replies : int
         取得する返信の最大数
-    order : str, optional
-        コメントの表示順。 "newer" または "recommended" のいずれかを指定, by default "newer"
-    timeout : int, optional
-        WebDriverのタイムアウト時間, by default 10
+    order : str, Optional
+        コメントの表示順。 "newer" または "recommended" のいずれかを指定
+    timeout : int, Optional
+        WebDriverのタイムアウト時間
 
     Returns
     -------
-    list[dict[str, str]]
-        コメントのリスト
+    dict[str, str | list[GeneralComment]]
+        スクレイピングしたデータ
     """
 
     try:
