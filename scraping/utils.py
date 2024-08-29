@@ -292,3 +292,36 @@ def open_page(driver: webdriver, url: str, page: int, order: str = "") -> None:
 
     # 新しいURLでページを開く
     driver.get(new_url)
+
+
+def get_filtered_vars(pattern: str = None) -> dict[str, str]:
+    """
+    xpath.pyから変数を取得し、指定の正規表現パターンに基づいてフィルタリングする。
+
+    Parameters
+    ----------
+    pattern : str
+        変数名をフィルタリングするための正規表現パターン。Noneの場合、全ての変数を含む。
+
+    Returns
+    -------
+    dict[str, str]
+        フィルタリングされた変数の名前と値の辞書
+    """
+    # モジュール内の変数を取得
+    module_vars = [
+        (name, value)
+        for name, value in inspect.getmembers(xpath)
+        if not name.startswith("_")
+    ]
+
+    # パターンが指定されていない場合は全ての変数を返す
+    if pattern is None:
+        return dict(module_vars)
+
+    # フィルタリング
+    filtered_vars_values = {
+        name: value for name, value in module_vars if re.search(pattern, name)
+    }
+
+    return filtered_vars_values
