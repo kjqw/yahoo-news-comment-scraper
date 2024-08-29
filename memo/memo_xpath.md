@@ -153,3 +153,30 @@ Copy full XPathで取得したものを記録。
         - <https://news.yahoo.co.jp/.../comments?page=2>
         - <https://news.yahoo.co.jp/.../comments?order=newer&page=3>
         - など
+
+## メモ
+
+- コメントAI要約β版が表示されると、コメント数のXPathが変わる
+  - 新しいコメントページにはつくが、古いコメントページにはつかない？
+  - 1週間ほど経過したコメントページにはついていないことを1つ確認した
+  - 要約AIがある場合
+
+    ```python
+    XPATH_TOTAL_COMMENT_COUNT_WITH_REPLY = (
+        "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span"
+    )
+    XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = (
+        "/html/body/div[1]/div/main/div[1]/div[1]/article/div[6]/div/p/span"
+    )
+    ```
+
+  - 要約AIがない場合
+
+    ```python
+    XPATH_TOTAL_COMMENT_COUNT_WITH_REPLY = (
+        "/html/body/div[1]/div/main/div[1]/div[1]/article/div[2]/div/p/span"
+    )
+    XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = (
+        "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span"
+    )
+    ```
