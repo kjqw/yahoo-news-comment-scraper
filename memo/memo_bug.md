@@ -23,3 +23,7 @@ kjqw@DESKTOP-V5HNETV ~/university/B4/study/yahoo_news %
 ## find_elementsとfind_element
 
 ない要素を取得しようとすると、find_elementはエラーを返すが、find_elementsは空のリストを返す。
+
+## 返信が取得できない
+
+8/29には取得できていたものが8/30ではできない。同じコードを実行しているのにできない。返信を表示するボタンが押せていない？
