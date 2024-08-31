@@ -276,8 +276,6 @@ def get_article_comments(
             "article_title": XPATH_ARTICLE_TITLE,
             "article_author": XPATH_ARTICLE_AUTHOR,
             "article_posted_time": XPATH_ARTICLE_POSTED_TIME,
-            "total_comment_count_with_reply": XPATH_TOTAL_COMMENT_COUNT_WITH_REPLY,
-            "total_comment_count_without_reply": XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY,
         }
         xpaths_general_comments = {
             "username": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
