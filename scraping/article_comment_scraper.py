@@ -341,7 +341,7 @@ def save_data(data: dict[str, str | list[GeneralComment]], save_path: Path) -> N
 if __name__ == "__main__":
     url = "https://news.yahoo.co.jp/articles/a9e7e7f9c3f25c2becdefa309c22e1f8cb60240f/comments"
     max_comments = 20
-    max_replies = 5
+    max_replies = 20
 
     # コメントを取得
     data = get_article_comments(url, max_comments, max_replies)
