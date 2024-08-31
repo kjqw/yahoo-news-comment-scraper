@@ -1,5 +1,6 @@
 import pickle
 from collections import defaultdict
+from math import ceil
 from pathlib import Path
 
 import utils
@@ -7,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from tqdm import tqdm
 from xpath_article_page import *
 
 
@@ -212,8 +214,6 @@ def get_reply_comment_sections(
             By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE
         ).click()
 
-        print("もっと返信を表示して待機中")
-
         # 返信コメントのセクションが追加されるまで待機
         WebDriverWait(webelement, timeout).until(
             lambda element: len(
@@ -227,14 +227,10 @@ def get_reply_comment_sections(
             webelement.find_elements(By.XPATH, relative_xpath_reply_comment_sections)
         )
 
-        print(f"返信コメントを追加で取得した。現在の返信数: {cnt}")
-
     # 返信コメントのセクションを取得
     reply_comment_sections = webelement.find_elements(
         By.XPATH, relative_xpath_reply_comment_sections
     )
-    print(f"返信コメントの数: {len(reply_comment_sections)}")
-    print()
     return reply_comment_sections
 
 
@@ -322,8 +318,10 @@ def get_article_comments(
                 By.XPATH, XPATH_GENERAL_COMMENT_SECTIONS
             )
             # それぞれの一般コメントについて処理
-            for general_comment_section in general_comment_sections:
-
+            for general_comment_section in tqdm(
+                general_comment_sections,
+                desc=f"コメント取得 {page}/{ceil(max_comments//10)}ページ目",
+            ):
                 # 一般コメントの情報を取得
                 tmp_dict = {}
                 for key, xpath in xpaths_general_comments.items():
