@@ -172,6 +172,16 @@ def get_reply_comment_sections(
     list[WebElement]
         返信コメントのセクションのリスト
     """
+
+    # 返信が0件の場合は空のリストを返す
+    if (
+        webelement.find_element(
+            By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_COUNT
+        ).text
+        == "0"
+    ):
+        return []
+
     # XPathの相対パスを取得
     relative_xpath_reply_comment_sections = utils.get_relative_xpath(
         XPATH_GENERAL_COMMENT_SECTIONS, XPATH_REPLY_COMMENT_SECTIONS
