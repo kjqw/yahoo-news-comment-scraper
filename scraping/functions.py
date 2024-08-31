@@ -3,7 +3,7 @@ import re
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-import xpath_article_page
+import xpath_article_comment_page
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -311,7 +311,7 @@ def get_filtered_vars(pattern: str = None) -> dict[str, str]:
     # モジュール内の変数を取得
     module_vars = [
         (name, value)
-        for name, value in inspect.getmembers(xpath_article_page)
+        for name, value in inspect.getmembers(xpath_article_comment_page)
         if not name.startswith("_")
     ]
 
