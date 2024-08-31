@@ -35,3 +35,7 @@ RELATIVE_XPATH_COMMENT_REPLY_COUNT = (
     "article[2]/div/div/div[2]/div/a/span[2]"  # ないこともある
 )
 RELATIVE_XPATH_COMMENT_REPLY_COMMENT = "article[2]/div/div[1]/a"  # ないこともある
+
+XPATH_COMMENT_MORE_BUTTON = (
+    "/html/body/div[1]/div/main/div[1]/div/div[3]/div/div/span/button"
+)
