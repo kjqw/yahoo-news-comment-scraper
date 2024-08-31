@@ -260,18 +260,19 @@ def get_article_comments(
         data["comments"] = []
         while (page - 1) * 10 < max_comments:
             # 一般コメントのセクションを取得
-            general_comment_sections = utils.get_comment_sections(driver)
+            # general_comment_sections = utils.get_comment_sections(driver)
+            general_comment_sections = driver.find_elements(
+                By.XPATH, XPATH_GENERAL_COMMENT_SECTIONS
+            )
             # それぞれの一般コメントについて処理
-            for comment_section in general_comment_sections:
-                # 返信コメントのセクションを取得
-                reply_comment_sections = get_reply_comment_sections(
-                    comment_section, max_replies
-                )
+            for general_comment_section in general_comment_sections:
 
                 # 一般コメントの情報を取得
                 tmp_dict = {}
                 for key, xpath in xpaths_general_comments.items():
-                    tmp_dict[key] = comment_section.find_element(By.XPATH, xpath).text
+                    tmp_dict[key] = general_comment_section.find_element(
+                        By.XPATH, xpath
+                    ).text
 
                 # 一般コメントのオブジェクトを作成
                 general_comment = GeneralComment(
@@ -284,25 +285,32 @@ def get_article_comments(
                     reply_count=tmp_dict["reply_count"],
                 )
 
-                # 返信コメントの情報を取得
-                for reply_comment_section in reply_comment_sections:
-                    tmp_dict = {}
-                    for key, xpath in xpaths_reply_comments.items():
-                        tmp_dict[key] = reply_comment_section.find_element(
-                            By.XPATH, xpath
-                        ).text
+                # 返信コメントのセクションを取得
+                reply_comment_sections = get_reply_comment_sections(
+                    general_comment_section, max_replies
+                )
 
-                    # 返信コメントのオブジェクトを作成
-                    reply_comment = ReplyComment(
-                        username=tmp_dict["username"],
-                        posted_time=tmp_dict["posted_time"],
-                        comment_text=tmp_dict["comment_text"],
-                        agreements=tmp_dict["agreements"],
-                        acknowledgements=tmp_dict["acknowledgements"],
-                        disagreements=tmp_dict["disagreements"],
-                    )
-                    general_comment.reply_comments.append(reply_comment)
-                    reply_comment.set_base_comment(general_comment)
+                # 返信コメントがない場合はスキップ
+                if reply_comment_sections:
+                    # 返信コメントの情報を取得
+                    for reply_comment_section in reply_comment_sections:
+                        tmp_dict = {}
+                        for key, xpath in xpaths_reply_comments.items():
+                            tmp_dict[key] = reply_comment_section.find_element(
+                                By.XPATH, xpath
+                            ).text
+
+                        # 返信コメントのオブジェクトを作成
+                        reply_comment = ReplyComment(
+                            username=tmp_dict["username"],
+                            posted_time=tmp_dict["posted_time"],
+                            comment_text=tmp_dict["comment_text"],
+                            agreements=tmp_dict["agreements"],
+                            acknowledgements=tmp_dict["acknowledgements"],
+                            disagreements=tmp_dict["disagreements"],
+                        )
+                        general_comment.reply_comments.append(reply_comment)
+                        reply_comment.set_base_comment(general_comment)
 
                 # 一般コメントを格納
                 data["comments"].append(general_comment)
