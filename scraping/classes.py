@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 
 
 class Article:
@@ -121,21 +122,21 @@ class Comment:
         self.acknowledgements: int = 0
         self.disagreements: int = 0
 
-    def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
+    def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
         """
         渡されたXPATHの辞書を用いてコメントの情報を取得する。
         '_link'で終わるキーの場合はhref属性を、それ以外の場合はtextを取得する。
 
         Parameters
         ----------
-        driver : webdriver
-            WebDriverインスタンス
+        webelement : WebElement
+            コメントの要素
         xpaths : dict[str, str]
             XPATHの辞書
         """
         for key, xpath in xpaths.items():
             try:
-                element = driver.find_element(By.XPATH, xpath)
+                element = webelement.find_element(By.XPATH, xpath)
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
                     setattr(self, key, element.get_attribute("href"))
