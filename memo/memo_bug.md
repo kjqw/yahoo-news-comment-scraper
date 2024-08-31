@@ -28,3 +28,29 @@ kjqw@DESKTOP-V5HNETV ~/university/B4/study/yahoo_news %
 
 8/29には取得できていたものが8/30ではできない。同じコードを実行しているのにできない。返信を表示するボタンが押せていない？
 8/31にはできるようになっていた。原因は不明。
+要素が表示されるまで待機すれば安定して取得できるようになった。
+
+## 返信数が取得できない
+
+reply_countが空で返ってくる。article_comment_scraper.pyでは常に空で返ってくるが、ほぼ同じはずの以下のようなコードでは取得できる。
+
+```python
+try:
+    driver = utils.init_driver()
+    driver.get(url)
+
+    comment_sections = utils.get_comment_sections(driver)
+    reply_counts = []
+    reply_counts_text = []
+    for comment_section in comment_sections:
+        reply_count_element = comment_section.find_element(
+            By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_COUNT
+        )
+        reply_counts.append(reply_count_element)
+        reply_counts_text.append(reply_count_element.text)
+
+finally:
+    driver.quit()
+```
+
+`get_reply_comment_sections`の前に返信数を取得すると取得できた。`get_reply_comment_sections`の中で返信ボタンをクリックする動作があるが、それによってwebelementに何らかの変化が起きているのかもしれない。
