@@ -1,63 +1,30 @@
-# 記事ページの要素
-XPATH_ARTICLE_TITLE = "/html/body/div[1]/div/main/div[1]/div[1]/article/header/h1/a"
-XPATH_ARTICLE_AUTHOR = "/html/body/div[1]/div/main/div[1]/div[1]/article/header/p/a"
-XPATH_ARTICLE_POSTED_TIME = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/header/p/span/time"
-)
+# ジャンルのXPath
+# 選択されているジャンルの要素は、liのclass属性が他のものと違う
+XPATH_GENRE = "/html/body/div[1]/header/nav/div[2]/ul[1]/li/a"
 
-XPATHS_TOTAL_COMMENT_COUNT_WITH_REPLY = [
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[2]/div/p/span",
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span",
-]
-XPATHS_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = [
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span",
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[6]/div/p/span",
-]
+# 記事部分の要素
+ID_ARTICLE_SECTION = "contentsWrap"
+XPATH_ARTICLE_SECTION = "/html/body/div[1]/div/main/div[1]/div"
+RELATIVE_XPATH_ARTICLE_TITLE = "article/header/h1"
+RELATIVE_XPATH_ARTICLE_AUTHOR = "article/footer/a"
+RELATIVE_XPATH_ARTICLE_POSTED_TIME = "article/header/div/div/p/time"
+RELATIVE_XPATH_ARTICLE_UPDATED_TIME = "article/footer/div/time"
 
-# 専門家コメントの要素
-XPATH_EXPERT_COMMENT_SECTIONS = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/ul[1]/li"
+RELATIVE_XPATH_ARTICLE_COMMENT_COUNT = "article/header/div/div/div[1]/button[1]/span"
+ID_ARTICLE_CONTENT = "highLightSearchTarget"
+RELATIVE_XPATH_ARTICLE_CONTENT = "article/div[1]/div/p"
+RELATIVE_XPATH_ARTICLE_PAGE_COUNT = (
+    "article/div[3]/div/p/span"  # ページ数が複数ある場合のみ存在
 )
-RELATIVE_XPATH_EXPERT_USERNAME = "article/div[2]/div[1]/h2/a"
-RELATIVE_XPATH_EXPERT_POSTED_TIME = "article/div[2]/div[1]/time/a"
-RELATIVE_XPATH_EXPERT_TYPE = "article/div[2]/div[1]/p"
-RELATIVE_XPATH_EXPERT_COMMENT_BUTTON = "article/div[2]/p/button"
-RELATIVE_XPATH_EXPERT_COMMENT_TEXT = "article/div[2]/p"
-RELATIVE_XPATH_EXPERT_AGREEMENTS = "article/div[2]/div[2]/button/span"
+RELATIVE_XPATH_ARTICLE_LERAN = "/article/div[3]/ul/li[1]/div/span"
+RELATIVE_XPATH_ARTICLE_CLARITY = "article/div[3]/ul/li[2]/div/span"
+RELATIVE_XPATH_ARTICLE_NEW_PERSPECTIVE = "article/div[3]/ul/li[3]/div/span"
 
-# 一般コメントの要素
-XPATH_GENERAL_COMMENT_SECTIONS = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/ul[2]/li"
+RELATIVE_XPATH_RELATED_ARTICLES = "article/section/ul/li/a"
+RELATIVE_XPATH_READ_ALSO = "aside/div/ul/li/a"
+RELATIVE_XPATH_READ_ALSO_COMMENT_COUNT = (
+    "aside/div/ul/li/a/div[2]/div[2]/div/span[1]"  # ないこともある
 )
-RELATIVE_XPATH_GENERAL_COMMENT_USERNAME = "article/article/div[2]/div[1]/h2/a"
-RELATIVE_XPATH_GENERAL_COMMENT_POSTED_TIME = "article/article/div[2]/div[1]/time/a"
-RELATIVE_XPATH_GENERAL_COMMENT_COMMENT_TEXT = "article/article/div[2]/p"
-RELATIVE_XPATH_GENERAL_COMMENT_AGREEMENTS = (
-    "article/article/div[2]/div[2]/div/ul/li[1]/button[2]/span/span[2]"
-)
-RELATIVE_XPATH_GENERAL_COMMENT_ACKNOWLEDGEMENTS = (
-    "article/article/div[2]/div[2]/div/ul/li[2]/button[2]/span/span[2]"
-)
-RELATIVE_XPATH_GENERAL_COMMENT_DISAGREEMENTS = (
-    "article/article/div[2]/div[2]/div/ul/li[3]/button[2]/span/span[2]"
-)
-RELATIVE_XPATH_GENERAL_COMMENT_REPLY_COUNT = (
-    "article/article/div[2]/div[2]/button[1]/span"
-)
-RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON = "article/article/div[2]/div[2]/button[1]"
-RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE = "div/div[1]/div/button"
-
-# 返信コメントの要素
-XPATH_REPLY_COMMENT_SECTIONS = f"{XPATH_GENERAL_COMMENT_SECTIONS}/div/ul/li"
-RELATIVE_XPATH_REPLY_COMMENT_USERNAME = "div/article/div[2]/div[1]/h2/a"
-RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME = "div/article/div[2]/div[1]/time"
-RELATIVE_XPATH_REPLY_COMMENT_COMMENT_TEXT = "div/article/div[2]/p"
-RELATIVE_XPATH_REPLY_COMMENT_AGREEMENTS = (
-    "div/article/div[2]/div[2]/ul/li[1]/button[2]/span/span[2]"
-)
-RELATIVE_XPATH_REPLY_COMMENT_ACKNOWLEDGEMENTS = (
-    "div/article/div[2]/div[2]/ul/li[2]/button[2]/span/span[2]"
-)
-RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS = (
-    "div/article/div[2]/div[2]/ul/li[3]/button[2]/span/span[2]"
-)
+RELATIVE_XPATH_READ_ALSO_AUTHOR = "aside/div/ul/li/a/div[2]/div[2]/div/span[2]"  # コメント数の要素がない場合はspan[2]ではなくspan[1]になる
+RELATIVE_XPATH_READ_ALSO_POSTED_TIME = "aside/div/ul/li/a/div[2]/div[2]/div/time"
+XPATH_READ_ALSO_MORE_BUTTON = "aside/div/div[2]/button"
