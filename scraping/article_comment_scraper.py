@@ -4,7 +4,8 @@ from collections import defaultdict
 from math import ceil
 from pathlib import Path
 
-import utils
+import functions
+from classes import GeneralComment, ReplyComment
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -12,99 +13,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from tqdm import tqdm
 from xpath_article_page import *
-
-
-class GeneralComment:
-    """
-    一般コメントの情報を格納するクラス。
-
-    Attributes
-    ----------
-    username : str
-        ユーザ名
-    posted_time : str
-        投稿日時
-    comment_text : str
-        コメントの本文
-    agreements : int
-        「共感した」の数
-    acknowledgements : int
-        「参考になった」の数
-    disagreements : int
-        「うーん」の数
-    reply_count : int
-        返信の数
-    reply_comments : list[ReplyComment]
-        返信コメントのリスト
-    """
-
-    def __init__(
-        self,
-        username: str,
-        posted_time: str,
-        comment_text: str,
-        agreements: int,
-        acknowledgements: int,
-        disagreements: int,
-        reply_count: int,
-    ):
-        # コメントの情報
-        self.username: str = username
-        self.posted_time: str = posted_time
-        self.comment_text: str = comment_text
-        self.agreements: int = agreements
-        self.acknowledgements: int = acknowledgements
-        self.disagreements: int = disagreements
-        self.reply_count: int = reply_count
-
-        # 返信コメントのリスト
-        self.reply_comments: list[ReplyComment] = []
-
-
-class ReplyComment:
-    """
-    返信コメントの情報を格納するクラス。
-
-    Attributes
-    ----------
-    username : str
-        ユーザ名
-    posted_time : str
-        投稿日時
-    comment_text : str
-        コメントの本文
-    agreements : int
-        「共感した」の数
-    acknowledgements : int
-        「参考になった」の数
-    disagreements : int
-        「うーん」の数
-    base_comment : GeneralComment | None
-        返信先の一般コメント
-    """
-
-    def __init__(
-        self,
-        username: str,
-        posted_time: str,
-        comment_text: str,
-        agreements: int,
-        acknowledgements: int,
-        disagreements: int,
-    ):
-        # コメントの情報
-        self.username: str = username
-        self.posted_time: str = posted_time
-        self.comment_text: str = comment_text
-        self.agreements: int = agreements
-        self.acknowledgements: int = acknowledgements
-        self.disagreements: int = disagreements
-
-        # 返信先のコメント
-        self.base_comment: GeneralComment | None = None
-
-    def set_base_comment(self, base_comment: GeneralComment) -> None:
-        self.base_comment = base_comment
 
 
 def get_total_comment_count(driver: webdriver) -> list[str]:
@@ -187,7 +95,7 @@ def get_reply_comment_sections(
         return []
 
     # XPathの相対パスを取得
-    relative_xpath_reply_comment_sections = utils.get_relative_xpath(
+    relative_xpath_reply_comment_sections = functions.get_relative_xpath(
         XPATH_GENERAL_COMMENT_SECTIONS, XPATH_REPLY_COMMENT_SECTIONS
     )
 
@@ -294,7 +202,7 @@ def get_article_comments(
         }
 
         # ドライバを初期化
-        driver = utils.init_driver(timeout)
+        driver = functions.init_driver(timeout)
 
         # 記事のコメントページを開く
         driver.get(url)
@@ -374,7 +282,7 @@ def get_article_comments(
 
             # 次のページに移動
             page += 1
-            utils.open_page(driver, url, page, order)
+            functions.open_page(driver, url, page, order)
 
         return data
 
