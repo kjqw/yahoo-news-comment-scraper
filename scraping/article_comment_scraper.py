@@ -130,13 +130,6 @@ def get_reply_comment_sections(
         XPATH_GENERAL_COMMENT_SECTIONS, XPATH_REPLY_COMMENT_SECTIONS
     )
 
-    # 返信の数を取得
-    reply_count = int(
-        webelement.find_element(
-            By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_COUNT
-        ).text
-    )
-
     # 返信表示ボタンをクリック
     webelement.find_element(
         By.XPATH, RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON
@@ -180,17 +173,19 @@ def get_reply_comment_sections(
         print(f"返信コメントを追加で取得した。現在の返信数: {cnt}")
 
     # 返信コメントのセクションを取得
-    reply_comment_xpaths, reply_comments_sections = utils.find_all_combinations(
-        webelement, relative_xpath_reply_comment_sections, [1, 1, max_replies]
+    reply_comment_sections = webelement.find_elements(
+        By.XPATH, relative_xpath_reply_comment_sections
     )
-    return reply_comments_sections
+    print(f"返信コメントの数: {len(reply_comment_sections)}")
+    print()
+    return reply_comment_sections
 
 
 def get_article_comments(
     url: str,
     max_comments: int,
     max_replies: int,
-    order: str = "newer",
+    order: str = "recommended",
     timeout: int = 10,
 ) -> dict[str, str | list[GeneralComment]]:
     """
