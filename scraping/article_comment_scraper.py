@@ -1,3 +1,4 @@
+import argparse
 import pickle
 from collections import defaultdict
 from math import ceil
@@ -399,14 +400,79 @@ def save_data(data: dict[str, str | list[GeneralComment]], save_path: Path) -> N
         pickle.dump(data, f)
 
 
-if __name__ == "__main__":
-    url = "https://news.yahoo.co.jp/articles/a9e7e7f9c3f25c2becdefa309c22e1f8cb60240f/comments"
-    max_comments = 20
-    max_replies = 20
-
+def main(
+    url: str,
+    max_comments: int,
+    max_replies: int,
+    order: str,
+    timeout: int,
+    save_path: Path,
+) -> None:
     # コメントを取得
-    data = get_article_comments(url, max_comments, max_replies)
+    data = get_article_comments(url, max_comments, max_replies, order, timeout)
 
     # データを保存
-    save_path = Path(__file__).parent / "data" / "comments.pkl"
     save_data(data, save_path)
+
+
+if __name__ == "__main__":
+    # デフォルトの値
+    default_url = "https://news.yahoo.co.jp/articles/a9e7e7f9c3f25c2becdefa309c22e1f8cb60240f/comments"
+    default_url = "https://news.yahoo.co.jp/articles/0db50721a0f1d89d7e42a3d74d12e7bbc89d3ce8/comments"
+    default_max_comments = 20
+    default_max_replies = 20
+    default_order = "recommended"
+    default_timeout = 10
+    default_save_path = Path(__file__).parent / "data" / "comments.pkl"
+
+    parser = argparse.ArgumentParser(
+        description="記事のコメントを取得し、保存するスクリプト"
+    )
+
+    # 引数を追加（デフォルト値を指定）
+    parser.add_argument(
+        "--url", default=default_url, help="コメントを取得する記事のURL"
+    )
+    parser.add_argument(
+        "--max_comments",
+        type=int,
+        default=default_max_comments,
+        help="取得するコメントの最大数",
+    )
+    parser.add_argument(
+        "--max_replies",
+        type=int,
+        default=default_max_replies,
+        help="取得するリプライの最大数",
+    )
+    parser.add_argument(
+        "--order",
+        type=str,
+        default=default_order,
+        help="コメントの表示順",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=default_timeout,
+        help="WebDriverのタイムアウト時間",
+    )
+    parser.add_argument(
+        "--save_path",
+        type=Path,
+        default=default_save_path,
+        help="保存するファイルのパス",
+    )
+
+    # 引数を解析
+    args = parser.parse_args()
+
+    # メイン処理を実行
+    main(
+        args.url,
+        args.max_comments,
+        args.max_replies,
+        args.order,
+        args.timeout,
+        args.save_path,
+    )
