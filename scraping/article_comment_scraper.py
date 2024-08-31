@@ -255,7 +255,7 @@ def get_article_comments(
     max_comments : int
         取得するコメントの最大数。10の倍数以外の数を入力すると、10の倍数に切り上げて処理される。
     max_replies : int
-        取得する返信の最大数
+        取得する返信の最大数。10の倍数以外の数を入力すると、10の倍数に切り上げて処理される。
     order : str, Optional
         コメントの表示順。 "newer" または "recommended" のいずれかを指定
     timeout : int, Optional
