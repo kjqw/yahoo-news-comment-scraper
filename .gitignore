@@ -1,7 +1,7 @@
 html/
 orders/
 test/
-test.py
+test*.py
 
 __pycache__/
 
