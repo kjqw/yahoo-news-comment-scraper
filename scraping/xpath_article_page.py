@@ -5,19 +5,14 @@ XPATH_ARTICLE_POSTED_TIME = (
     "/html/body/div[1]/div/main/div[1]/div[1]/article/header/p/span/time"
 )
 
-# コメント数
-# XPATH_TOTAL_COMMENT_COUNT_WITH_REPLY = (
-#     "/html/body/div[1]/div/main/div[1]/div[1]/article/div[2]/div/p/span"
-# )
-# XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = (
-#     "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span"
-# )
-XPATH_TOTAL_COMMENT_COUNT_WITH_REPLY = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span"
-)
-XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[6]/div/p/span"
-)
+XPATHS_TOTAL_COMMENT_COUNT_WITH_REPLY = [
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[2]/div/p/span",
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span",
+]
+XPATHS_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = [
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[4]/div/p/span",
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/div[6]/div/p/span",
+]
 
 # 専門家コメントの要素
 XPATH_EXPERT_COMMENT_SECTIONS = (

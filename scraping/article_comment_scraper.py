@@ -103,6 +103,53 @@ class ReplyComment:
         self.base_comment = base_comment
 
 
+def get_total_comment_count(driver: webdriver) -> list[str]:
+    """
+    コメント数を取得する関数。コメント要約AIがあるとコメント数のxpathが変わるため、関数として独立させた。
+
+    Parameters
+    ----------
+    driver : webdriver
+        記事のコメントぺージの1ページ目を開いたWebDriver
+
+    Returns
+    -------
+    list[str]
+        コメント数のリスト
+    """
+
+    def get_comment_count(xpaths: list[str]) -> str:
+        """
+        指定されたXPathリストから最初に見つけたコメント数を取得する。
+
+        Parameters
+        ----------
+        xpaths : list[str]
+            コメント数を取得するためのXPathリスト
+
+        Returns
+        -------
+        str
+            コメント数
+        """
+        for xpath in xpaths:
+            try:
+                return driver.find_element(By.XPATH, xpath).text
+            except:
+                continue
+        return ""
+
+    # コメント数をリストで取得
+    total_comment_count_with_reply = get_comment_count(
+        XPATHS_TOTAL_COMMENT_COUNT_WITH_REPLY
+    )
+    total_comment_count_without_reply = get_comment_count(
+        XPATHS_TOTAL_COMMENT_COUNT_WITHOUT_REPLY
+    )
+
+    return [total_comment_count_with_reply, total_comment_count_without_reply]
+
+
 def get_reply_comment_sections(
     webelement: WebElement,
     max_replies: int,
@@ -249,6 +296,13 @@ def get_article_comments(
         # 記事の情報を取得
         for key, xpath in xpaths_article.items():
             data[key] = driver.find_element(By.XPATH, xpath).text
+
+        # コメント数を取得
+        total_comment_count_with_reply, total_comment_count_without_reply = (
+            get_total_comment_count(driver)
+        )
+        data["total_comment_count_with_reply"] = total_comment_count_with_reply
+        data["total_comment_count_without_reply"] = total_comment_count_without_reply
 
         # 最大数に達するまでコメントを取得
         page = 1
