@@ -21,7 +21,7 @@ XPATH_TOTAL_COMMENT_COUNT_WITHOUT_REPLY = (
 
 # 専門家コメントの要素
 XPATH_EXPERT_COMMENT_SECTIONS = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/ul[1]/li[i1]"
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/ul[1]/li"
 )
 RELATIVE_XPATH_EXPERT_USERNAME = "article/div[2]/div[1]/h2/a"
 RELATIVE_XPATH_EXPERT_POSTED_TIME = "article/div[2]/div[1]/time/a"
@@ -32,7 +32,7 @@ RELATIVE_XPATH_EXPERT_AGREEMENTS = "article/div[2]/div[2]/button/span"
 
 # 一般コメントの要素
 XPATH_GENERAL_COMMENT_SECTIONS = (
-    "/html/body/div[1]/div/main/div[1]/div[1]/article/ul[2]/li[i2]"
+    "/html/body/div[1]/div/main/div[1]/div[1]/article/ul[2]/li"
 )
 RELATIVE_XPATH_GENERAL_COMMENT_USERNAME = "article/article/div[2]/div[1]/h2/a"
 RELATIVE_XPATH_GENERAL_COMMENT_POSTED_TIME = "article/article/div[2]/div[1]/time/a"
@@ -53,7 +53,7 @@ RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON = "article/article/div[2]/div[2]/but
 RELATIVE_XPATH_GENERAL_COMMENT_REPLY_BUTTON_MORE = "div/div[1]/div/button"
 
 # 返信コメントの要素
-XPATH_REPLY_COMMENT_SECTIONS = f"{XPATH_GENERAL_COMMENT_SECTIONS}/div/ul/li[i3]"
+XPATH_REPLY_COMMENT_SECTIONS = f"{XPATH_GENERAL_COMMENT_SECTIONS}/div/ul/li"
 RELATIVE_XPATH_REPLY_COMMENT_USERNAME = "div/article/div[2]/div[1]/h2/a"
 RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME = "div/article/div[2]/div[1]/time"
 RELATIVE_XPATH_REPLY_COMMENT_COMMENT_TEXT = "div/article/div[2]/p"
