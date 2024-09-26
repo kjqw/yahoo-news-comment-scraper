@@ -56,8 +56,11 @@ python scraping/article_comment_scraper.py --url https://news.yahoo.co.jp/articl
 
 ### 主要ファイル
 
-- `scraping/article_comment_scraper.py`: Yahoo!ニュースからコメントをスクレイピングするスクリプト
-- `scraping/xpath*.py`: スクレイピングに使用するXPathの定義ファイル
+- `scraping/article_link_scraper.py`: Yahoo!ニュースのランキングページから記事のリンクをスクレイピングするスクリプト
+- `scraping/article_scraper.py`: 記事のリンクから記事の内容をスクレイピングするスクリプト
+- `scraping/article_comment_scraper.py`: 記事のコメントページからコメントをスクレイピングするスクリプト
+- `scraping/user_comment_scraper.py`: ユーザーページからユーザーのコメントをスクレイピングするスクリプト
+- `scraping/xpaths/`: スクレイピングに使用するXPathの定義ファイル
 - `scraping/functions.py`: スクレイピングに使用する関数の定義ファイル
 - `scraping/classes.py`: スクレイピングに使用するクラスの定義ファイル
 - `memo/`: 開発中のメモやバグ情報を記載したもの
