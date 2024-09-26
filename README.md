@@ -17,8 +17,11 @@
 
 ## 環境構築
 
-後で書く。
-現状の`Dockerfile`はローカルのイメージを参照しているため、そのままでは動作しません。
+- `git clone https://github.com/kjqw/yahoo-news-comment-scraper.git`などしてリポジトリをクローン
+- `code yahoo-news-comment-scraper`などしてVSCodeでプロジェクトを開く
+- 右下に表示される「Reopen in Container」をクリックしてDockerコンテナを起動
+- スクレイピングに使うライブラリとともに、私の開発環境が入ったDockerコンテナが起動します
+- これでスクレイピングができる環境が整いました
 
 ---
 
