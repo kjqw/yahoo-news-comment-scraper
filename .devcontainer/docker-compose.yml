@@ -12,24 +12,19 @@ services:
       dockerfile: ./Dockerfile
     container_name: yahoo_news
     volumes:
-      - type: bind
-        source: /home/kjqw/university/.cache
-        target: /workspace/.cache
+      # LLMのモデルを保存する場所を source: に指定すると、コンテナを消してもそこにダウンロードしたモデルが残る
+      # 別のコンテナで同じモデルを使いたい場合に便利
+      # - type: bind
+      #   source: /home/kjqw/university/.cache
+      #   target: /workspace/.cache
       - type: bind
         source: ../
         target: /workspace/yahoo_news
-      - type: bind
-        source: /home/kjqw/.gitconfig
-        target: /workspace/.gitconfig
-      - type: bind
-        source: /home/kjqw/.ssh
-        target: /workspace/.ssh
-      - type: bind
-        source: /home/kjqw/university/B4/references
-        target: /workspace/references
     depends_on:
       - selenium
     working_dir: /workspace
+    # コンテナ内でGPUを使う場合は以下の設定を追加する
+    # NVIDIA Container Toolkitをインストールしていないと使えない
     # runtime: nvidia
     # deploy:
     #   resources:
@@ -38,7 +33,7 @@ services:
     #         - driver: nvidia
     #           capabilities: [ gpu ]
     # environment:
+    #   - HF_HOME=/workspace/.cache/huggingface # これはtransformersライブラリがモデルを保存したり読み込んだりするディレクトリを指定するための環境変数。GPUの設定とは無関係
     #   - NVIDIA_VISIBLE_DEVICES=all
     #   - NVIDIA_DRIVER_CAPABILITIES=all
-    #   - HF_HOME=/workspace/.cache/huggingface
     command: sleep infinity

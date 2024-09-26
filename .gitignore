@@ -1,8 +1,6 @@
 html/
 orders/
-test/
-test*.py
-
 __pycache__/
 
+test*
 *.pkl
