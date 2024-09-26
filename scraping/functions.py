@@ -3,11 +3,11 @@ import re
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-import xpath_article_comment_page
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from xpaths import xpath_article_comment_page
 
 
 def init_driver(TIMEOUT: int = 10) -> webdriver:

@@ -12,7 +12,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from tqdm import tqdm
-from xpath_article_comment_page import *
+from xpaths.xpath_article_comment_page import *
 
 
 def get_total_comment_count(driver: webdriver) -> list[str]:
