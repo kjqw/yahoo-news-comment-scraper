@@ -11,60 +11,59 @@ class Article:
 
     Attributes
     ----------
-    link : str
+    link : str | None
         リンク
-    genre : str
+    genre : str | None
         ジャンル
-    title : str
+    title : str | None
         タイトル
-    author : str
+    author : str | None
         著者
-    author_link : str
+    author_link : str | None
         著者のリンク
-    posted_time : str
+    posted_time : str | None
         投稿日時
-    updated_time : str
+    updated_time : str | None
         更新日時
-    content : str
+    content : str | None
         本文
-    comment_count : int
+    comment_count : int | None
         コメント数
-    comments : list[GeneralComment]
+    comments : list[GeneralComment] | None
         一般コメントのリスト
-    expert_comments : list[ExpertComment]
+    expert_comments : list[ExpertComment] | None
         専門家コメントのリスト
-    learn_count : int
+    learn_count : int | None
         「学びになった」の数
-    clarity_count : int
+    clarity_count : int | None
         「わかりやすい」の数
-    new_perspective_count : int
+    new_perspective_count : int | None
         「新しい視点」の数
-    related_articles : list[Article]
+    related_articles : list[Article] | None
         「関連記事」のリスト
-    read_also_articles : list[Article]
+    read_also_articles : list[Article] | None
         「あわせて読みたい記事」のリスト
-    scraped_time : datetime
+    scraped_time : datetime | None
         スクレイピングされた日時
     """
 
     def __init__(self):
-        # 初期化時は空の状態にしておく
-        self.article_link: str = ""
-        self.article_genre: str = ""
-        self.article_title: str = ""
-        self.author: str = ""
-        self.author_link: str = ""
-        self.posted_time: str = ""
-        self.updated_time: str = ""
-        self.content: str = ""
-        self.comment_count: int = 0
-        self.comments: list[GeneralComment] = []
-        self.expert_comments: list[ExpertComment] = []
-        self.learn_count: int = 0
-        self.clarity_count: int = 0
-        self.new_perspective_count: int = 0
-        self.related_articles: list[Article] = []
-        self.read_also_articles: list[Article] = []
+        self.article_link: str | None = None
+        self.article_genre: str | None = None
+        self.article_title: str | None = None
+        self.author: str | None = None
+        self.author_link: str | None = None
+        self.posted_time: str | None = None
+        self.updated_time: str | None = None
+        self.content: str | None = None
+        self.comment_count: int | None = None
+        self.comments: list[GeneralComment] | None = None
+        self.expert_comments: list[ExpertComment] | None = None
+        self.learn_count: int | None = None
+        self.clarity_count: int | None = None
+        self.new_perspective_count: int | None = None
+        self.related_articles: list[Article] | None = None
+        self.read_also_articles: list[Article] | None = None
         self.scraped_time: datetime | None = None
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
@@ -101,34 +100,33 @@ class Comment:
     ----------
     article: Article | None
         コメント先の記事
-    username : str
+    username : str | None
         ユーザ名
-    user_link : str
+    user_link : str | None
         ユーザのリンク
-    posted_time : str
+    posted_time : str | None
         投稿日時
-    comment_text : str
+    comment_text : str | None
         コメントの本文
-    agreements : int
+    agreements : int | None
         「共感した」の数
-    acknowledgements : int
+    acknowledgements : int | None
         「参考になった」の数
-    disagreements : int
+    disagreements : int | None
         「うーん」の数
-    scraped_time : datetime
+    scraped_time : datetime | None
         スクレイピングされた日時
     """
 
     def __init__(self):
-        # 初期化時は空の状態にしておく
         self.article: Article | None = None
-        self.username: str = ""
-        self.user_link: str = ""
-        self.posted_time: str = ""
-        self.comment_text: str = ""
-        self.agreements: int = 0
-        self.acknowledgements: int = 0
-        self.disagreements: int = 0
+        self.username: str | None = None
+        self.user_link: str | None = None
+        self.posted_time: str | None = None
+        self.comment_text: str | None = None
+        self.agreements: int | None = None
+        self.acknowledgements: int | None = None
+        self.disagreements: int | None = None
         self.scraped_time: datetime | None = None
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
@@ -163,14 +161,14 @@ class ExpertComment(Comment):
 
     Attributes
     ----------
-    expert_type : str
+    expert_type : str | None
         専門家の種類
     """
 
     def __init__(self):
         # 親クラスの初期化
         super().__init__()
-        self.expert_type: str = ""
+        self.expert_type: str | None = None
 
         # agreementsとdisagreements属性を削除
         delattr(self, "agreements")
@@ -183,17 +181,17 @@ class GeneralComment(Comment):
 
     Attributes
     ----------
-    reply_count : int
+    reply_count : int | None
         返信の数
-    reply_comments : list[ReplyComment]
+    reply_comments : list[ReplyComment] | None
         返信コメントのリスト
     """
 
     def __init__(self):
         # 親クラスの初期化
         super().__init__()
-        self.reply_count: int = 0
-        self.reply_comments: list[ReplyComment] = []
+        self.reply_count: int | None = None
+        self.reply_comments: list[ReplyComment] | None = None
 
 
 class ReplyComment(Comment):
