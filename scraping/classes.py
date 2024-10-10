@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -41,6 +43,8 @@ class Article:
         「関連記事」のリスト
     read_also_articles : list[Article]
         「あわせて読みたい記事」のリスト
+    scraped_time : datetime
+        スクレイピングされた日時
     """
 
     def __init__(self):
@@ -61,6 +65,7 @@ class Article:
         self.new_perspective_count: int = 0
         self.related_articles: list[Article] = []
         self.read_also_articles: list[Article] = []
+        self.scraped_time: datetime | None = None
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
@@ -77,6 +82,7 @@ class Article:
         for key, xpath in xpaths.items():
             try:
                 element = driver.find_element(By.XPATH, xpath)
+                self.scraped_time = datetime.now()
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
                     setattr(self, key, element.get_attribute("href"))
@@ -109,6 +115,8 @@ class Comment:
         「参考になった」の数
     disagreements : int
         「うーん」の数
+    scraped_time : datetime
+        スクレイピングされた日時
     """
 
     def __init__(self):
@@ -121,6 +129,7 @@ class Comment:
         self.agreements: int = 0
         self.acknowledgements: int = 0
         self.disagreements: int = 0
+        self.scraped_time: datetime | None = None
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
         """
@@ -137,6 +146,7 @@ class Comment:
         for key, xpath in xpaths.items():
             try:
                 element = webelement.find_element(By.XPATH, xpath)
+                self.scraped_time = datetime.now()
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
                     setattr(self, key, element.get_attribute("href"))
