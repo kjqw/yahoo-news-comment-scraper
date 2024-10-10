@@ -54,4 +54,5 @@ CMD ["/bin/zsh"]
 # 一般ユーザーでインストールすると権限のエラーが発生するため、rootユーザーでインストール
 USER root
 RUN mamba install -y selenium webdriver-manager beautifulsoup4
+RUN mamba install -y ipykernel
 USER $USERNAME
