@@ -11,60 +11,63 @@ class Article:
 
     Attributes
     ----------
-    link : str | None
+    link : dict[datetime, str] | None
         リンク
-    genre : str | None
+    genre : dict[datetime, str] | None
         ジャンル
-    title : str | None
+    title : dict[datetime, str] | None
         タイトル
-    author : str | None
+    author : dict[datetime, str] | None
         著者
-    author_link : str | None
+    author_link : dict[datetime, str] | None
         著者のリンク
-    posted_time : str | None
+    posted_time : dict[datetime, str] | None
         投稿日時
-    updated_time : str | None
+    updated_time : dict[datetime, str] | None
         更新日時
-    content : str | None
+    ranking : dict[datetime, int] | None
+        ランキング
+    content : dict[datetime, str] | None
         本文
-    comment_count : int | None
+    comment_count : dict[datetime, int] | None
         コメント数
     comments : list[GeneralComment] | None
         一般コメントのリスト
     expert_comments : list[ExpertComment] | None
         専門家コメントのリスト
-    learn_count : int | None
+    learn_count : dict[datetime, int] | None
         「学びになった」の数
-    clarity_count : int | None
+    clarity_count : dict[datetime, int] | None
         「わかりやすい」の数
-    new_perspective_count : int | None
+    new_perspective_count : dict[datetime, int] | None
         「新しい視点」の数
     related_articles : list[Article] | None
         「関連記事」のリスト
     read_also_articles : list[Article] | None
         「あわせて読みたい記事」のリスト
-    scraped_time : datetime | None
+    scraped_time : list[datetime] | None
         スクレイピングされた日時
     """
 
     def __init__(self):
-        self.article_link: str | None = None
-        self.article_genre: str | None = None
-        self.article_title: str | None = None
-        self.author: str | None = None
-        self.author_link: str | None = None
-        self.posted_time: str | None = None
-        self.updated_time: str | None = None
-        self.content: str | None = None
-        self.comment_count: int | None = None
+        self.article_link: dict[datetime, str] | None = None
+        self.article_genre: dict[datetime, str] | None = None
+        self.article_title: dict[datetime, str] | None = None
+        self.author: dict[datetime, str] | None = None
+        self.author_link: dict[datetime, str] | None = None
+        self.posted_time: dict[datetime, str] | None = None
+        self.updated_time: dict[datetime, str] | None = None
+        self.ranking: dict[datetime, int] | None = None
+        self.content: dict[datetime, str] | None = None
+        self.comment_count: dict[datetime, int] | None = None
         self.comments: list[GeneralComment] | None = None
         self.expert_comments: list[ExpertComment] | None = None
-        self.learn_count: int | None = None
-        self.clarity_count: int | None = None
-        self.new_perspective_count: int | None = None
+        self.learn_count: dict[datetime, int] | None = None
+        self.clarity_count: dict[datetime, int] | None = None
+        self.new_perspective_count: dict[datetime, int] | None = None
         self.related_articles: list[Article] | None = None
         self.read_also_articles: list[Article] | None = None
-        self.scraped_time: datetime | None = None
+        self.scraped_time: list[datetime] | None = None
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
@@ -81,13 +84,26 @@ class Article:
         for key, xpath in xpaths.items():
             try:
                 element = driver.find_element(By.XPATH, xpath)
-                self.scraped_time = datetime.now()
+                # scraped_timeがNoneなら空のリストに初期化
+                if self.scraped_time is None:
+                    self.scraped_time = []
+                # 現在の時刻を追加
+                self.scraped_time.append(datetime.now())
+
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
-                    setattr(self, key, element.get_attribute("href"))
-                # それ以外ならtextを取得する
+                    link_value = element.get_attribute("href")
+                    if getattr(self, key) is None:
+                        setattr(self, key, {})
+                    getattr(self, key)[self.scraped_time[-1]] = link_value
+
+                # その他のtextデータを時刻とともに辞書に保存する
                 else:
-                    setattr(self, key, element.text)
+                    text_value = element.text
+                    if getattr(self, key) is None:
+                        setattr(self, key, {})
+                    getattr(self, key)[self.scraped_time[-1]] = text_value
+
             except Exception as e:
                 print(f"{key}を取得中にエラーが発生しました: {e}")
 
@@ -100,34 +116,34 @@ class Comment:
     ----------
     article: Article | None
         コメント先の記事
-    username : str | None
+    username : dict[datetime, str] | None
         ユーザ名
-    user_link : str | None
+    user_link : dict[datetime, str] | None
         ユーザのリンク
-    posted_time : str | None
+    posted_time : dict[datetime, str] | None
         投稿日時
-    comment_text : str | None
+    comment_text : dict[datetime, str] | None
         コメントの本文
-    agreements : int | None
+    agreements : dict[datetime, int] | None
         「共感した」の数
-    acknowledgements : int | None
+    acknowledgements : dict[datetime, int] | None
         「参考になった」の数
-    disagreements : int | None
+    disagreements : dict[datetime, int] | None
         「うーん」の数
-    scraped_time : datetime | None
+    scraped_time : list[datetime] | None
         スクレイピングされた日時
     """
 
     def __init__(self):
         self.article: Article | None = None
-        self.username: str | None = None
-        self.user_link: str | None = None
-        self.posted_time: str | None = None
-        self.comment_text: str | None = None
-        self.agreements: int | None = None
-        self.acknowledgements: int | None = None
-        self.disagreements: int | None = None
-        self.scraped_time: datetime | None = None
+        self.username: dict[datetime, str] | None = None
+        self.user_link: dict[datetime, str] | None = None
+        self.posted_time: dict[datetime, str] | None = None
+        self.comment_text: dict[datetime, str] | None = None
+        self.agreements: dict[datetime, int] | None = None
+        self.acknowledgements: dict[datetime, int] | None = None
+        self.disagreements: dict[datetime, int] | None = None
+        self.scraped_time: list[datetime] | None = None
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
         """
@@ -144,13 +160,26 @@ class Comment:
         for key, xpath in xpaths.items():
             try:
                 element = webelement.find_element(By.XPATH, xpath)
-                self.scraped_time = datetime.now()
+                # scraped_timeがNoneなら空のリストに初期化
+                if self.scraped_time is None:
+                    self.scraped_time = []
+                # 現在の時刻を追加
+                self.scraped_time.append(datetime.now())
+
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
-                    setattr(self, key, element.get_attribute("href"))
-                # それ以外ならtextを取得する
+                    link_value = element.get_attribute("href")
+                    if getattr(self, key) is None:
+                        setattr(self, key, {})
+                    getattr(self, key)[self.scraped_time[-1]] = link_value
+
+                # その他のtextデータを時刻とともに辞書に保存する
                 else:
-                    setattr(self, key, element.text)
+                    text_value = element.text
+                    if getattr(self, key) is None:
+                        setattr(self, key, {})
+                    getattr(self, key)[self.scraped_time[-1]] = text_value
+
             except Exception as e:
                 print(f"{key}を取得中にエラーが発生しました: {e}")
 
