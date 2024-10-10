@@ -11,35 +11,35 @@ class Article:
 
     Attributes
     ----------
-    link : dict[datetime, str] | None
+    link : dict[int, str] | None
         リンク
-    genre : dict[datetime, str] | None
+    genre : dict[int, str] | None
         ジャンル
-    title : dict[datetime, str] | None
+    title : dict[int, str] | None
         タイトル
-    author : dict[datetime, str] | None
+    author : dict[int, str] | None
         著者
-    author_link : dict[datetime, str] | None
+    author_link : dict[int, str] | None
         著者のリンク
-    posted_time : dict[datetime, str] | None
+    posted_time : dict[int, str] | None
         投稿日時
-    updated_time : dict[datetime, str] | None
+    updated_time : dict[int, str] | None
         更新日時
-    ranking : dict[datetime, int] | None
+    ranking : dict[int, int] | None
         ランキング
-    content : dict[datetime, str] | None
+    content : dict[int, str] | None
         本文
-    comment_count : dict[datetime, int] | None
+    comment_count : dict[int, int] | None
         コメント数
     comments : list[GeneralComment] | None
         一般コメントのリスト
     expert_comments : list[ExpertComment] | None
         専門家コメントのリスト
-    learn_count : dict[datetime, int] | None
+    learn_count : dict[int, int] | None
         「学びになった」の数
-    clarity_count : dict[datetime, int] | None
+    clarity_count : dict[int, int] | None
         「わかりやすい」の数
-    new_perspective_count : dict[datetime, int] | None
+    new_perspective_count : dict[int, int] | None
         「新しい視点」の数
     related_articles : list[Article] | None
         「関連記事」のリスト
@@ -47,27 +47,30 @@ class Article:
         「あわせて読みたい記事」のリスト
     scraped_time : list[datetime] | None
         スクレイピングされた日時
+    scraping_count : int
+        スクレイピング回数
     """
 
     def __init__(self):
-        self.article_link: dict[datetime, str] | None = None
-        self.article_genre: dict[datetime, str] | None = None
-        self.article_title: dict[datetime, str] | None = None
-        self.author: dict[datetime, str] | None = None
-        self.author_link: dict[datetime, str] | None = None
-        self.posted_time: dict[datetime, str] | None = None
-        self.updated_time: dict[datetime, str] | None = None
-        self.ranking: dict[datetime, int] | None = None
-        self.content: dict[datetime, str] | None = None
-        self.comment_count: dict[datetime, int] | None = None
+        self.article_link: dict[int, str] | None = None
+        self.article_genre: dict[int, str] | None = None
+        self.article_title: dict[int, str] | None = None
+        self.author: dict[int, str] | None = None
+        self.author_link: dict[int, str] | None = None
+        self.posted_time: dict[int, str] | None = None
+        self.updated_time: dict[int, str] | None = None
+        self.ranking: dict[int, int] | None = None
+        self.content: dict[int, str] | None = None
+        self.comment_count: dict[int, int] | None = None
         self.comments: list[GeneralComment] | None = None
         self.expert_comments: list[ExpertComment] | None = None
-        self.learn_count: dict[datetime, int] | None = None
-        self.clarity_count: dict[datetime, int] | None = None
-        self.new_perspective_count: dict[datetime, int] | None = None
+        self.learn_count: dict[int, int] | None = None
+        self.clarity_count: dict[int, int] | None = None
+        self.new_perspective_count: dict[int, int] | None = None
         self.related_articles: list[Article] | None = None
         self.read_also_articles: list[Article] | None = None
-        self.scraped_time: list[datetime] | None = None
+        self.scraped_time: dict[int, datetime] | None = None
+        self.scraping_count: int = 1
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
@@ -81,31 +84,36 @@ class Article:
         xpaths : dict[str, str]
             XPATHの辞書
         """
+        # scraped_timeがNoneなら空の辞書に初期化
+        if self.scraped_time is None:
+            self.scraped_time = {}
+        # 現在の時刻を追加
+        self.scraped_time[self.scraping_count] = datetime.now()
+
+        # 各XPATHを用いて情報を取得
         for key, xpath in xpaths.items():
             try:
                 element = driver.find_element(By.XPATH, xpath)
-                # scraped_timeがNoneなら空のリストに初期化
-                if self.scraped_time is None:
-                    self.scraped_time = []
-                # 現在の時刻を追加
-                self.scraped_time.append(datetime.now())
 
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
                     link_value = element.get_attribute("href")
                     if getattr(self, key) is None:
                         setattr(self, key, {})
-                    getattr(self, key)[self.scraped_time[-1]] = link_value
+                    getattr(self, key)[self.scraping_count] = link_value
 
                 # その他のtextデータを時刻とともに辞書に保存する
                 else:
                     text_value = element.text
                     if getattr(self, key) is None:
                         setattr(self, key, {})
-                    getattr(self, key)[self.scraped_time[-1]] = text_value
+                    getattr(self, key)[self.scraping_count] = text_value
 
             except Exception as e:
                 print(f"{key}を取得中にエラーが発生しました: {e}")
+
+        # スクレイピング回数を更新
+        self.scraping_count += 1
 
 
 class Comment:
@@ -116,34 +124,37 @@ class Comment:
     ----------
     article: Article | None
         コメント先の記事
-    username : dict[datetime, str] | None
+    username : dict[int, str] | None
         ユーザ名
-    user_link : dict[datetime, str] | None
+    user_link : dict[int, str] | None
         ユーザのリンク
-    posted_time : dict[datetime, str] | None
+    posted_time : dict[int, str] | None
         投稿日時
-    comment_text : dict[datetime, str] | None
+    comment_text : dict[int, str] | None
         コメントの本文
-    agreements : dict[datetime, int] | None
+    agreements : dict[int, int] | None
         「共感した」の数
-    acknowledgements : dict[datetime, int] | None
+    acknowledgements : dict[int, int] | None
         「参考になった」の数
-    disagreements : dict[datetime, int] | None
+    disagreements : dict[int, int] | None
         「うーん」の数
-    scraped_time : list[datetime] | None
+    scraped_time : dict[int, datetime] | None
         スクレイピングされた日時
+    scraping_count : int
+        スクレイピング回数
     """
 
     def __init__(self):
         self.article: Article | None = None
-        self.username: dict[datetime, str] | None = None
-        self.user_link: dict[datetime, str] | None = None
-        self.posted_time: dict[datetime, str] | None = None
-        self.comment_text: dict[datetime, str] | None = None
-        self.agreements: dict[datetime, int] | None = None
-        self.acknowledgements: dict[datetime, int] | None = None
-        self.disagreements: dict[datetime, int] | None = None
-        self.scraped_time: list[datetime] | None = None
+        self.username: dict[int, str] | None = None
+        self.user_link: dict[int, str] | None = None
+        self.posted_time: dict[int, str] | None = None
+        self.comment_text: dict[int, str] | None = None
+        self.agreements: dict[int, int] | None = None
+        self.acknowledgements: dict[int, int] | None = None
+        self.disagreements: dict[int, int] | None = None
+        self.scraped_time: dict[int, datetime] | None = None
+        self.scraping_count: int = 1
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
         """
@@ -157,31 +168,36 @@ class Comment:
         xpaths : dict[str, str]
             XPATHの辞書
         """
+        # scraped_timeがNoneなら空の辞書に初期化
+        if self.scraped_time is None:
+            self.scraped_time = {}
+        # 現在の時刻を追加
+        self.scraped_time[self.scraping_count] = datetime.now()
+
+        # 各XPATHを用いて情報を取得
         for key, xpath in xpaths.items():
             try:
                 element = webelement.find_element(By.XPATH, xpath)
-                # scraped_timeがNoneなら空のリストに初期化
-                if self.scraped_time is None:
-                    self.scraped_time = []
-                # 現在の時刻を追加
-                self.scraped_time.append(datetime.now())
 
                 # keyが'_link'で終わる場合はhref属性を取得する
                 if key.endswith("_link"):
                     link_value = element.get_attribute("href")
                     if getattr(self, key) is None:
                         setattr(self, key, {})
-                    getattr(self, key)[self.scraped_time[-1]] = link_value
+                    getattr(self, key)[self.scraping_count] = link_value
 
                 # その他のtextデータを時刻とともに辞書に保存する
                 else:
                     text_value = element.text
                     if getattr(self, key) is None:
                         setattr(self, key, {})
-                    getattr(self, key)[self.scraped_time[-1]] = text_value
+                    getattr(self, key)[self.scraping_count] = text_value
 
             except Exception as e:
                 print(f"{key}を取得中にエラーが発生しました: {e}")
+
+        # スクレイピング回数を更新
+        self.scraping_count += 1
 
 
 class ExpertComment(Comment):
