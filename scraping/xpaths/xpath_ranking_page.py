@@ -22,6 +22,7 @@ CLASS_ARTICLE_TITLE = "newsFeed_item_title"
 
 # 記事のXPath
 XPATH_ARTICLE_LINKS = "/html/body/div[1]/div/main/div[1]/div/div[2]/ol/li/a"
+RELATIVE_XPATH_RANKING = "span"
 RELATIVE_XPATH_ARTICLE_TITLE = "div/div[2]/div[1]"
 RELATIVE_XPATH_ARTICLE_AUTHOR = "div/div[2]/div[2]/div[1]/span"
 RELATIVE_XPATH_ARTICLE_POSTED_TIME = "div/div[2]/div[2]/div[1]/time"
