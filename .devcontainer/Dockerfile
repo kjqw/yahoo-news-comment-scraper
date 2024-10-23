@@ -1,15 +1,15 @@
 # ベースイメージの指定
-FROM condaforge/mambaforge:latest
+FROM ubuntu:noble
 
 # 一般ユーザーの設定
-# USERNAMEは自由に変更可能
 ARG USERNAME=kjqw
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-# 一般ユーザーの追加とsudoの設定
-RUN groupadd --gid $USER_GID $USERNAME && \
-    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME&& \
+# ubuntu:nobleにデフォルトで存在するubuntuユーザーを削除し、一般ユーザーの追加とsudoの設定を行う
+RUN userdel -r ubuntu && \
+    groupadd --gid $USER_GID $USERNAME && \
+    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME && \
     apt update && apt install -y sudo && \
     echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME && \
     chmod 440 /etc/sudoers.d/$USERNAME
@@ -44,15 +44,11 @@ RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/inst
 RUN sudo cp /root/.zshrc /home/$USERNAME/.zshrc && \
     sudo chsh -s $(which zsh) $USERNAME
 
+# Pythonのパッケージマネジャの一つであるuvのインストール
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # パッケージのアップグレード
 RUN sudo apt update && sudo apt upgrade -y
 
 # デフォルトのシェルをZshに設定
 CMD ["/bin/zsh"]
-
-# スクレイピング用のライブラリをインストール
-# 一般ユーザーでインストールすると権限のエラーが発生するため、rootユーザーでインストール
-USER root
-RUN mamba install -y selenium webdriver-manager beautifulsoup4
-RUN mamba install -y ipykernel
-USER $USERNAME
