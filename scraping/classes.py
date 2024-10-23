@@ -1,4 +1,5 @@
 import json
+from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
@@ -7,7 +8,99 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 
 
-class Article:
+class Savable(ABC):
+    """
+    データを保存できるクラスの基底クラス。
+    """
+
+    @abstractmethod
+    def export_data(self) -> dict:
+        """
+        jsonに書き込むためのデータを返す。具体的なクラスで実装する必要がある。
+        """
+        pass
+
+    def save_data(self, save_path: Path) -> None:
+        """
+        jsonに書き込むためのデータを保存する。既存のjsonファイルがある場合はデータを追加する。
+
+        Parameters
+        ----------
+        save_path : Path
+            保存先のパス
+        """
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 既存のデータを読み込む（ファイルが存在する場合）
+        if save_path.exists():
+            with open(save_path, "r", encoding="utf-8") as f:
+                existing_data = json.load(f)
+        else:
+            existing_data = {}
+
+        # 新しいデータをエクスポート
+        new_data = self.export_data()
+
+        # 既存のデータと新しいデータをマージ
+        existing_data.update(new_data)
+
+        # データをファイルに書き込む
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(existing_data, f, indent=4, ensure_ascii=False)
+
+    def _serialize(self, obj) -> str | int | dict:
+        """
+        オブジェクトがArticleやCommentクラスであればidを、それ以外の場合はそのまま返す。
+
+        Parameters
+        ----------
+        obj : Any
+            シリアライズ対象のオブジェクト
+
+        Returns
+        -------
+        str | int | dict
+            シリアライズされた結果
+        """
+        if isinstance(
+            obj,
+            (
+                Article,
+                Comment,
+                ExpertComment,
+                GeneralComment,
+                ReplyComment,
+            ),
+        ):
+            return id(obj)
+        elif isinstance(obj, list):  # listをチェック
+            return [
+                self._serialize(item) for item in obj
+            ]  # リスト内の要素を再帰的にシリアライズ
+        elif isinstance(obj, dict):  # dictをチェック
+            return {
+                key: self._serialize(value) for key, value in obj.items()
+            }  # 辞書のキー・値を再帰的にシリアライズ
+        elif isinstance(obj, datetime):  # datetimeをチェック
+            return obj.isoformat()  # datetimeをISOフォーマットの文字列に変換
+        return obj
+
+    def export_data(self) -> dict:
+        """
+        オブジェクトのすべての属性を動的にシリアライズして辞書形式で返す。
+
+        Returns
+        -------
+        dict
+            シリアライズされたオブジェクトのデータ
+        """
+        data = {}
+        for key, value in self.__dict__.items():
+            data[key] = self._serialize(value)
+        return {id(self): data}
+
+
+class Article(Savable):
     """
     記事の基本情報を格納するクラス。
 
@@ -124,87 +217,87 @@ class Article:
         except:
             pass
 
-    def export_data(self) -> dict:
-        """
-        jsonに書き込むためのデータを返す。クラスオブジェクトはjsonに書き込めないため、代わりにインスタンスのidを記録する。
+    # def export_data(self) -> dict:
+    #     """
+    #     jsonに書き込むためのデータを返す。クラスオブジェクトはjsonに書き込めないため、代わりにインスタンスのidを記録する。
 
-        Returns
-        -------
-        dict
-            jsonに書き込むためのデータ
-        """
-        return {
-            list(self.article_link.values())[-1].replace(
-                "https://news.yahoo.co.jp/articles/", ""  # URLからIDのみを取得
-            ): {
-                "article_link": self.article_link,
-                "article_genre": self.article_genre,
-                "article_title": self.article_title,
-                "author": self.author,
-                "author_link": self.author_link,
-                "posted_time": self.posted_time,
-                "updated_time": self.updated_time,
-                "ranking": self.ranking,
-                "content": self.content,
-                "comment_count": self.comment_count,
-                "comment_count_per_hour": self.comment_count_per_hour,
-                "comments": (
-                    [id(comment) for comment in self.comments] if self.comments else []
-                ),
-                "expert_comments": (
-                    [id(comment) for comment in self.expert_comments]
-                    if self.expert_comments
-                    else []
-                ),
-                "learn_count": self.learn_count,
-                "clarity_count": self.clarity_count,
-                "new_perspective_count": self.new_perspective_count,
-                "related_articles": (
-                    [id(article) for article in self.related_articles]
-                    if self.related_articles
-                    else []
-                ),
-                "read_also_articles": (
-                    [id(article) for article in self.read_also_articles]
-                    if self.read_also_articles
-                    else []
-                ),
-                "scraped_time": {
-                    k: v.isoformat() for k, v in self.scraped_time.items()
-                },
-            }
-        }
+    #     Returns
+    #     -------
+    #     dict
+    #         jsonに書き込むためのデータ
+    #     """
+    #     return {
+    #         list(self.article_link.values())[-1].replace(
+    #             "https://news.yahoo.co.jp/articles/", ""  # URLからIDのみを取得
+    #         ): {
+    #             "article_link": self.article_link,
+    #             "article_genre": self.article_genre,
+    #             "article_title": self.article_title,
+    #             "author": self.author,
+    #             "author_link": self.author_link,
+    #             "posted_time": self.posted_time,
+    #             "updated_time": self.updated_time,
+    #             "ranking": self.ranking,
+    #             "content": self.content,
+    #             "comment_count": self.comment_count,
+    #             "comment_count_per_hour": self.comment_count_per_hour,
+    #             "comments": (
+    #                 [id(comment) for comment in self.comments] if self.comments else []
+    #             ),
+    #             "expert_comments": (
+    #                 [id(comment) for comment in self.expert_comments]
+    #                 if self.expert_comments
+    #                 else []
+    #             ),
+    #             "learn_count": self.learn_count,
+    #             "clarity_count": self.clarity_count,
+    #             "new_perspective_count": self.new_perspective_count,
+    #             "related_articles": (
+    #                 [id(article) for article in self.related_articles]
+    #                 if self.related_articles
+    #                 else []
+    #             ),
+    #             "read_also_articles": (
+    #                 [id(article) for article in self.read_also_articles]
+    #                 if self.read_also_articles
+    #                 else []
+    #             ),
+    #             "scraped_time": {
+    #                 k: v.isoformat() for k, v in self.scraped_time.items()
+    #             },
+    #         }
+    #     }
 
-    def save_data(self, save_path: Path) -> None:
-        """
-        jsonに書き込むためのデータを保存する。既存のjsonファイルがある場合はデータを追加する。
+    # def save_data(self, save_path: Path) -> None:
+    #     """
+    #     jsonに書き込むためのデータを保存する。既存のjsonファイルがある場合はデータを追加する。
 
-        Parameters
-        ----------
-        save_path : Path
-            保存先のパス
-        """
-        save_path.parent.mkdir(parents=True, exist_ok=True)
+    #     Parameters
+    #     ----------
+    #     save_path : Path
+    #         保存先のパス
+    #     """
+    #     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # 既存のデータを読み込む（ファイルが存在する場合）
-        if save_path.exists():
-            with open(save_path, "r", encoding="utf-8") as f:
-                existing_data = json.load(f)
-        else:
-            existing_data = {}
+    #     # 既存のデータを読み込む（ファイルが存在する場合）
+    #     if save_path.exists():
+    #         with open(save_path, "r", encoding="utf-8") as f:
+    #             existing_data = json.load(f)
+    #     else:
+    #         existing_data = {}
 
-        # 新しいデータをエクスポート
-        new_data = self.export_data()
+    #     # 新しいデータをエクスポート
+    #     new_data = self.export_data()
 
-        # 既存のデータと新しいデータをマージ
-        existing_data.update(new_data)
+    #     # 既存のデータと新しいデータをマージ
+    #     existing_data.update(new_data)
 
-        # データをファイルに書き込む
-        with open(save_path, "w", encoding="utf-8") as f:
-            json.dump(existing_data, f, indent=4, ensure_ascii=False)
+    #     # データをファイルに書き込む
+    #     with open(save_path, "w", encoding="utf-8") as f:
+    #         json.dump(existing_data, f, indent=4, ensure_ascii=False)
 
 
-class Comment:
+class Comment(Savable):
     """
     コメントの基本情報を格納するクラス。
 
@@ -290,6 +383,59 @@ class Comment:
 
         except:
             pass
+
+    # def export_data(self) -> dict:
+    #     """
+    #     jsonに書き込むためのデータを返す。クラスオブジェクトはjsonに書き込めないため、代わりにインスタンスのidを記録する。
+
+    #     Returns
+    #     -------
+    #     dict
+    #         jsonに書き込むためのデータ
+    #     """
+    #     return {
+    #         id(self): {
+    #             "article": id(self.article) if self.article else None,
+    #             "username": self.username,
+    #             "user_link": self.user_link,
+    #             "posted_time": self.posted_time,
+    #             "comment_text": self.comment_text,
+    #             "agreements": self.agreements,
+    #             "acknowledgements": self.acknowledgements,
+    #             "disagreements": self.disagreements,
+    #             "scraped_time": {
+    #                 k: v.isoformat() for k, v in self.scraped_time.items()
+    #             },
+    #         }
+    #     }
+
+    # def save_data(self, save_path: Path) -> None:
+    #     """
+    #     jsonに書き込むためのデータを保存する。既存のjsonファイルがある場合はデータを追加する。
+
+    #     Parameters
+    #     ----------
+    #     save_path : Path
+    #         保存先のパス
+    #     """
+    #     save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    #     # 既存のデータを読み込む（ファイルが存在する場合）
+    #     if save_path.exists():
+    #         with open(save_path, "r", encoding="utf-8") as f:
+    #             existing_data = json.load(f)
+    #     else:
+    #         existing_data = {}
+
+    #     # 新しいデータをエクスポート
+    #     new_data = self.export_data()
+
+    #     # 既存のデータと新しいデータをマージ
+    #     existing_data.update(new_data)
+
+    #     # データをファイルに書き込む
+    #     with open(save_path, "w", encoding="utf-8") as f:
+    #         json.dump(existing_data, f, indent=4, ensure_ascii=False)
 
 
 class ExpertComment(Comment):
