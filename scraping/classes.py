@@ -1,4 +1,6 @@
+import json
 from datetime import datetime
+from pathlib import Path
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -31,6 +33,8 @@ class Article:
         本文
     comment_count : dict[int, int] | None
         コメント数
+    comment_count_per_hour : dict[int, int] | None
+        1時間あたりのコメント数
     comments : list[GeneralComment] | None
         一般コメントのリスト
     expert_comments : list[ExpertComment] | None
@@ -62,6 +66,7 @@ class Article:
         self.ranking: dict[int, int] | None = None
         self.content: dict[int, str] | None = None
         self.comment_count: dict[int, int] | None = None
+        self.comment_count_per_hour: dict[int, int] | None = None
         self.comments: list[GeneralComment] | None = None
         self.expert_comments: list[ExpertComment] | None = None
         self.learn_count: dict[int, int] | None = None
@@ -70,7 +75,7 @@ class Article:
         self.related_articles: list[Article] | None = None
         self.read_also_articles: list[Article] | None = None
         self.scraped_time: dict[int, datetime] | None = None
-        self.scraping_count: int = 1
+        self.scraping_count: int = 0
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
@@ -88,32 +93,115 @@ class Article:
         if self.scraped_time is None:
             self.scraped_time = {}
         # 現在の時刻を追加
-        self.scraped_time[self.scraping_count] = datetime.now()
+        self.scraped_time[self.scraping_count + 1] = datetime.now()
 
-        # 各XPATHを用いて情報を取得
-        for key, xpath in xpaths.items():
-            try:
-                element = driver.find_element(By.XPATH, xpath)
+        try:
+            # 各XPATHを用いて情報を取得
+            for key, xpath in xpaths.items():
+                try:
+                    element = driver.find_element(By.XPATH, xpath)
 
-                # keyが'_link'で終わる場合はhref属性を取得する
-                if key.endswith("_link"):
-                    link_value = element.get_attribute("href")
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = link_value
+                    # keyが'_link'で終わる場合はhref属性を取得する
+                    if key.endswith("_link"):
+                        link_value = element.get_attribute("href")
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count + 1] = link_value
 
-                # その他のtextデータを時刻とともに辞書に保存する
-                else:
-                    text_value = element.text
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = text_value
+                    # その他のtextデータを時刻とともに辞書に保存する
+                    else:
+                        text_value = element.text
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count + 1] = text_value
 
-            except Exception as e:
-                print(f"{key}を取得中にエラーが発生しました: {e}")
+                except Exception as e:
+                    print(f"{key}を取得中にエラーが発生しました: {e}")
 
-        # スクレイピング回数を更新
-        self.scraping_count += 1
+            # スクレイピング回数を更新
+            self.scraping_count += 1
+
+        except:
+            pass
+
+    def export_data(self) -> dict:
+        """
+        jsonに書き込むためのデータを返す。クラスオブジェクトはjsonに書き込めないため、代わりにインスタンスのidを記録する。
+
+        Returns
+        -------
+        dict
+            jsonに書き込むためのデータ
+        """
+        return {
+            list(self.article_link.values())[-1].replace(
+                "https://news.yahoo.co.jp/articles/", ""  # URLからIDのみを取得
+            ): {
+                "article_link": self.article_link,
+                "article_genre": self.article_genre,
+                "article_title": self.article_title,
+                "author": self.author,
+                "author_link": self.author_link,
+                "posted_time": self.posted_time,
+                "updated_time": self.updated_time,
+                "ranking": self.ranking,
+                "content": self.content,
+                "comment_count": self.comment_count,
+                "comment_count_per_hour": self.comment_count_per_hour,
+                "comments": (
+                    [id(comment) for comment in self.comments] if self.comments else []
+                ),
+                "expert_comments": (
+                    [id(comment) for comment in self.expert_comments]
+                    if self.expert_comments
+                    else []
+                ),
+                "learn_count": self.learn_count,
+                "clarity_count": self.clarity_count,
+                "new_perspective_count": self.new_perspective_count,
+                "related_articles": (
+                    [id(article) for article in self.related_articles]
+                    if self.related_articles
+                    else []
+                ),
+                "read_also_articles": (
+                    [id(article) for article in self.read_also_articles]
+                    if self.read_also_articles
+                    else []
+                ),
+                "scraped_time": {
+                    k: v.isoformat() for k, v in self.scraped_time.items()
+                },
+            }
+        }
+
+    def save_data(self, save_path: Path) -> None:
+        """
+        jsonに書き込むためのデータを保存する。既存のjsonファイルがある場合はデータを追加する。
+
+        Parameters
+        ----------
+        save_path : Path
+            保存先のパス
+        """
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 既存のデータを読み込む（ファイルが存在する場合）
+        if save_path.exists():
+            with open(save_path, "r", encoding="utf-8") as f:
+                existing_data = json.load(f)
+        else:
+            existing_data = {}
+
+        # 新しいデータをエクスポート
+        new_data = self.export_data()
+
+        # 既存のデータと新しいデータをマージ
+        existing_data.update(new_data)
+
+        # データをファイルに書き込む
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(existing_data, f, indent=4, ensure_ascii=False)
 
 
 class Comment:
@@ -154,7 +242,7 @@ class Comment:
         self.acknowledgements: dict[int, int] | None = None
         self.disagreements: dict[int, int] | None = None
         self.scraped_time: dict[int, datetime] | None = None
-        self.scraping_count: int = 1
+        self.scraping_count: int = 0
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
         """
@@ -172,32 +260,36 @@ class Comment:
         if self.scraped_time is None:
             self.scraped_time = {}
         # 現在の時刻を追加
-        self.scraped_time[self.scraping_count] = datetime.now()
+        self.scraped_time[self.scraping_count + 1] = datetime.now()
 
-        # 各XPATHを用いて情報を取得
-        for key, xpath in xpaths.items():
-            try:
-                element = webelement.find_element(By.XPATH, xpath)
+        try:
+            # 各XPATHを用いて情報を取得
+            for key, xpath in xpaths.items():
+                try:
+                    element = webelement.find_element(By.XPATH, xpath)
 
-                # keyが'_link'で終わる場合はhref属性を取得する
-                if key.endswith("_link"):
-                    link_value = element.get_attribute("href")
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = link_value
+                    # keyが'_link'で終わる場合はhref属性を取得する
+                    if key.endswith("_link"):
+                        link_value = element.get_attribute("href")
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count + 1] = link_value
 
-                # その他のtextデータを時刻とともに辞書に保存する
-                else:
-                    text_value = element.text
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = text_value
+                    # その他のtextデータを時刻とともに辞書に保存する
+                    else:
+                        text_value = element.text
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count + 1] = text_value
 
-            except Exception as e:
-                print(f"{key}を取得中にエラーが発生しました: {e}")
+                except Exception as e:
+                    print(f"{key}を取得中にエラーが発生しました: {e}")
 
-        # スクレイピング回数を更新
-        self.scraping_count += 1
+            # スクレイピング回数を更新
+            self.scraping_count += 1
+
+        except:
+            pass
 
 
 class ExpertComment(Comment):

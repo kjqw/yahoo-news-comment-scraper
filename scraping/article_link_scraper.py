@@ -1,3 +1,6 @@
+from datetime import datetime
+from pathlib import Path
+
 import functions
 from classes import Article
 from selenium.webdriver.common.by import By
@@ -29,7 +32,7 @@ def get_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> list[Arti
 
         # 記事の要素を取得
         articles = []
-        for element in driver.find_elements(By.CLASS_NAME, CLASS_ARTICLE_LINKS):
+        for element in driver.find_elements(By.XPATH, XPATH_ARTICLE_LINKS):
             article = Article()
             article.get_info(
                 element,
@@ -39,6 +42,7 @@ def get_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> list[Arti
                     "author": RELATIVE_XPATH_ARTICLE_AUTHOR,
                     "posted_time": RELATIVE_XPATH_ARTICLE_POSTED_TIME,
                     "ranking": RELATIVE_XPATH_RANKING,
+                    "comment_count_per_hour": RELATIVE_XPATH_ARTICLE_COMMENT_COUNT_PER_HOUR,
                 },
             )
 
@@ -48,3 +52,17 @@ def get_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> list[Arti
 
     finally:
         driver.quit()
+
+
+if __name__ == "__main__":
+    # 保存先のパス
+    save_path = (
+        Path(__file__).parent
+        / "data/json"
+        / f"articles_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
+    )
+    # 記事のリンクを取得
+    articles = get_articles()
+    # データを保存
+    for article in articles:
+        article.save_data(save_path)
