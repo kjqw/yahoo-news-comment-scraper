@@ -1,7 +1,7 @@
 {
-    "name": "yahoo_news",
+    "name": "yahoo-news-comment-scraper",
     "dockerComposeFile": "./docker-compose.yml",
-    "service": "yahoo_news",
+    "service": "yahoo-news-comment-scraper",
     "workspaceFolder": "/workspace",
     "customizations": {
         "vscode": {
@@ -18,7 +18,6 @@
                     "MD024": false,
                     "MD033": false
                 },
-                "python.defaultInterpreterPath": "/opt/conda/bin/python",
                 "[python]": {
                     "editor.defaultFormatter": "ms-python.black-formatter",
                     "editor.formatOnSave": true,
