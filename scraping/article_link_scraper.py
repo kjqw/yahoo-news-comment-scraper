@@ -1,3 +1,6 @@
+from datetime import datetime
+from pathlib import Path
+
 import functions
 from classes import Article
 from selenium.webdriver.common.by import By
@@ -49,3 +52,17 @@ def get_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> list[Arti
 
     finally:
         driver.quit()
+
+
+if __name__ == "__main__":
+    # 保存先のパス
+    save_path = (
+        Path(__file__).parent
+        / "data/json"
+        / f"articles_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
+    )
+    # 記事のリンクを取得
+    articles = get_articles()
+    # データを保存
+    for article in articles:
+        article.save_data(save_path)
