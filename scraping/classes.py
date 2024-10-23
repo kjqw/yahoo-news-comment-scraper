@@ -149,25 +149,25 @@ class Article(Savable):
     """
 
     def __init__(self):
-        self.article_link: dict[int, str] | None = None
-        self.article_genre: dict[int, str] | None = None
-        self.article_title: dict[int, str] | None = None
-        self.author: dict[int, str] | None = None
-        self.author_link: dict[int, str] | None = None
-        self.posted_time: dict[int, str] | None = None
-        self.updated_time: dict[int, str] | None = None
-        self.ranking: dict[int, int] | None = None
-        self.content: dict[int, str] | None = None
-        self.comment_count: dict[int, int] | None = None
-        self.comment_count_per_hour: dict[int, int] | None = None
-        self.comments: list[GeneralComment] | None = None
-        self.expert_comments: list[ExpertComment] | None = None
-        self.learn_count: dict[int, int] | None = None
-        self.clarity_count: dict[int, int] | None = None
-        self.new_perspective_count: dict[int, int] | None = None
-        self.related_articles: list[Article] | None = None
-        self.read_also_articles: list[Article] | None = None
-        self.scraped_time: dict[int, datetime] | None = None
+        self.article_link: dict[int, str] | None = {}
+        self.article_genre: dict[int, str] | None = {}
+        self.article_title: dict[int, str] | None = {}
+        self.author: dict[int, str] | None = {}
+        self.author_link: dict[int, str] | None = {}
+        self.posted_time: dict[int, str] | None = {}
+        self.updated_time: dict[int, str] | None = {}
+        self.ranking: dict[int, int] | None = {}
+        self.content: dict[int, str] | None = {}
+        self.comment_count: dict[int, int] | None = {}
+        self.comment_count_per_hour: dict[int, int] | None = {}
+        self.comments: list[GeneralComment] | None = []
+        self.expert_comments: list[ExpertComment] | None = []
+        self.learn_count: dict[int, int] | None = {}
+        self.clarity_count: dict[int, int] | None = {}
+        self.new_perspective_count: dict[int, int] | None = {}
+        self.related_articles: list[Article] | None = []
+        self.read_also_articles: list[Article] | None = []
+        self.scraped_time: dict[int, datetime] | None = {}
         self.scraping_count: int = 0
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
@@ -327,14 +327,14 @@ class Comment(Savable):
 
     def __init__(self):
         self.article: Article | None = None
-        self.username: dict[int, str] | None = None
-        self.user_link: dict[int, str] | None = None
-        self.posted_time: dict[int, str] | None = None
-        self.comment_text: dict[int, str] | None = None
-        self.agreements: dict[int, int] | None = None
-        self.acknowledgements: dict[int, int] | None = None
-        self.disagreements: dict[int, int] | None = None
-        self.scraped_time: dict[int, datetime] | None = None
+        self.username: dict[int, str] | None = {}
+        self.user_link: dict[int, str] | None = {}
+        self.posted_time: dict[int, str] | None = {}
+        self.comment_text: dict[int, str] | None = {}
+        self.agreements: dict[int, int] | None = {}
+        self.acknowledgements: dict[int, int] | None = {}
+        self.disagreements: dict[int, int] | None = {}
+        self.scraped_time: dict[int, datetime] | None = {}
         self.scraping_count: int = 0
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
@@ -474,7 +474,7 @@ class GeneralComment(Comment):
         # 親クラスの初期化
         super().__init__()
         self.reply_count: int | None = None
-        self.reply_comments: list[ReplyComment] | None = None
+        self.reply_comments: list[ReplyComment] | None = []
 
 
 class ReplyComment(Comment):
