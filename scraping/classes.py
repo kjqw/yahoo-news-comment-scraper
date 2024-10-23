@@ -31,6 +31,8 @@ class Article:
         本文
     comment_count : dict[int, int] | None
         コメント数
+    comment_count_per_hour : dict[int, int] | None
+        1時間あたりのコメント数
     comments : list[GeneralComment] | None
         一般コメントのリスト
     expert_comments : list[ExpertComment] | None
@@ -62,6 +64,7 @@ class Article:
         self.ranking: dict[int, int] | None = None
         self.content: dict[int, str] | None = None
         self.comment_count: dict[int, int] | None = None
+        self.comment_count_per_hour: dict[int, int] | None = None
         self.comments: list[GeneralComment] | None = None
         self.expert_comments: list[ExpertComment] | None = None
         self.learn_count: dict[int, int] | None = None

@@ -39,6 +39,7 @@ def get_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> list[Arti
                     "author": RELATIVE_XPATH_ARTICLE_AUTHOR,
                     "posted_time": RELATIVE_XPATH_ARTICLE_POSTED_TIME,
                     "ranking": RELATIVE_XPATH_RANKING,
+                    "comment_count_per_hour": RELATIVE_XPATH_ARTICLE_COMMENT_COUNT_PER_HOUR,
                 },
             )
 
