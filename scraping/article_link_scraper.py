@@ -29,7 +29,7 @@ def get_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> list[Arti
 
         # 記事の要素を取得
         articles = []
-        for element in driver.find_elements(By.CLASS_NAME, CLASS_ARTICLE_LINKS):
+        for element in driver.find_elements(By.XPATH, XPATH_ARTICLE_LINKS):
             article = Article()
             article.get_info(
                 element,

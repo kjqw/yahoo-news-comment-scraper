@@ -16,10 +16,6 @@ URL_GENRES = [
     "local",  # 地域
 ]
 
-# 記事のclass属性
-CLASS_ARTICLE_LINKS = "newsFeed_item_link"
-CLASS_ARTICLE_TITLE = "newsFeed_item_title"
-
 # 記事のXPath
 XPATH_ARTICLE_LINKS = "/html/body/div[1]/div/main/div[1]/div/div[2]/ol/li/a"
 RELATIVE_XPATH_RANKING = "span"
