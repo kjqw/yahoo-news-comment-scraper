@@ -70,7 +70,7 @@ class Article:
         self.related_articles: list[Article] | None = None
         self.read_also_articles: list[Article] | None = None
         self.scraped_time: dict[int, datetime] | None = None
-        self.scraping_count: int = 1
+        self.scraping_count: int = 0
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
@@ -90,30 +90,34 @@ class Article:
         # 現在の時刻を追加
         self.scraped_time[self.scraping_count] = datetime.now()
 
-        # 各XPATHを用いて情報を取得
-        for key, xpath in xpaths.items():
-            try:
-                element = driver.find_element(By.XPATH, xpath)
+        try:
+            # 各XPATHを用いて情報を取得
+            for key, xpath in xpaths.items():
+                try:
+                    element = driver.find_element(By.XPATH, xpath)
 
-                # keyが'_link'で終わる場合はhref属性を取得する
-                if key.endswith("_link"):
-                    link_value = element.get_attribute("href")
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = link_value
+                    # keyが'_link'で終わる場合はhref属性を取得する
+                    if key.endswith("_link"):
+                        link_value = element.get_attribute("href")
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count] = link_value
 
-                # その他のtextデータを時刻とともに辞書に保存する
-                else:
-                    text_value = element.text
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = text_value
+                    # その他のtextデータを時刻とともに辞書に保存する
+                    else:
+                        text_value = element.text
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count] = text_value
 
-            except Exception as e:
-                print(f"{key}を取得中にエラーが発生しました: {e}")
+                except Exception as e:
+                    print(f"{key}を取得中にエラーが発生しました: {e}")
 
-        # スクレイピング回数を更新
-        self.scraping_count += 1
+            # スクレイピング回数を更新
+            self.scraping_count += 1
+
+        except:
+            pass
 
 
 class Comment:
@@ -154,7 +158,7 @@ class Comment:
         self.acknowledgements: dict[int, int] | None = None
         self.disagreements: dict[int, int] | None = None
         self.scraped_time: dict[int, datetime] | None = None
-        self.scraping_count: int = 1
+        self.scraping_count: int = 0
 
     def get_info(self, webelement: WebElement, xpaths: dict[str, str]) -> None:
         """
@@ -174,30 +178,34 @@ class Comment:
         # 現在の時刻を追加
         self.scraped_time[self.scraping_count] = datetime.now()
 
-        # 各XPATHを用いて情報を取得
-        for key, xpath in xpaths.items():
-            try:
-                element = webelement.find_element(By.XPATH, xpath)
+        try:
+            # 各XPATHを用いて情報を取得
+            for key, xpath in xpaths.items():
+                try:
+                    element = webelement.find_element(By.XPATH, xpath)
 
-                # keyが'_link'で終わる場合はhref属性を取得する
-                if key.endswith("_link"):
-                    link_value = element.get_attribute("href")
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = link_value
+                    # keyが'_link'で終わる場合はhref属性を取得する
+                    if key.endswith("_link"):
+                        link_value = element.get_attribute("href")
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count] = link_value
 
-                # その他のtextデータを時刻とともに辞書に保存する
-                else:
-                    text_value = element.text
-                    if getattr(self, key) is None:
-                        setattr(self, key, {})
-                    getattr(self, key)[self.scraping_count] = text_value
+                    # その他のtextデータを時刻とともに辞書に保存する
+                    else:
+                        text_value = element.text
+                        if getattr(self, key) is None:
+                            setattr(self, key, {})
+                        getattr(self, key)[self.scraping_count] = text_value
 
-            except Exception as e:
-                print(f"{key}を取得中にエラーが発生しました: {e}")
+                except Exception as e:
+                    print(f"{key}を取得中にエラーが発生しました: {e}")
 
-        # スクレイピング回数を更新
-        self.scraping_count += 1
+            # スクレイピング回数を更新
+            self.scraping_count += 1
+
+        except:
+            pass
 
 
 class ExpertComment(Comment):
