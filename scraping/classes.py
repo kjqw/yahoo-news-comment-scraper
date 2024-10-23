@@ -91,7 +91,7 @@ class Article:
         if self.scraped_time is None:
             self.scraped_time = {}
         # 現在の時刻を追加
-        self.scraped_time[self.scraping_count] = datetime.now()
+        self.scraped_time[self.scraping_count + 1] = datetime.now()
 
         try:
             # 各XPATHを用いて情報を取得
@@ -104,14 +104,14 @@ class Article:
                         link_value = element.get_attribute("href")
                         if getattr(self, key) is None:
                             setattr(self, key, {})
-                        getattr(self, key)[self.scraping_count] = link_value
+                        getattr(self, key)[self.scraping_count + 1] = link_value
 
                     # その他のtextデータを時刻とともに辞書に保存する
                     else:
                         text_value = element.text
                         if getattr(self, key) is None:
                             setattr(self, key, {})
-                        getattr(self, key)[self.scraping_count] = text_value
+                        getattr(self, key)[self.scraping_count + 1] = text_value
 
                 except Exception as e:
                     print(f"{key}を取得中にエラーが発生しました: {e}")
@@ -179,7 +179,7 @@ class Comment:
         if self.scraped_time is None:
             self.scraped_time = {}
         # 現在の時刻を追加
-        self.scraped_time[self.scraping_count] = datetime.now()
+        self.scraped_time[self.scraping_count + 1] = datetime.now()
 
         try:
             # 各XPATHを用いて情報を取得
@@ -192,14 +192,14 @@ class Comment:
                         link_value = element.get_attribute("href")
                         if getattr(self, key) is None:
                             setattr(self, key, {})
-                        getattr(self, key)[self.scraping_count] = link_value
+                        getattr(self, key)[self.scraping_count + 1] = link_value
 
                     # その他のtextデータを時刻とともに辞書に保存する
                     else:
                         text_value = element.text
                         if getattr(self, key) is None:
                             setattr(self, key, {})
-                        getattr(self, key)[self.scraping_count] = text_value
+                        getattr(self, key)[self.scraping_count + 1] = text_value
 
                 except Exception as e:
                     print(f"{key}を取得中にエラーが発生しました: {e}")
