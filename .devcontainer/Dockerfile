@@ -52,3 +52,8 @@ RUN sudo apt update && sudo apt upgrade -y
 
 # デフォルトのシェルをZshに設定
 CMD ["/bin/zsh"]
+
+# ------------------------------------------------------------
+
+# データベースを扱うためのツールのインストール
+RUN sudo apt install -y postgresql-client

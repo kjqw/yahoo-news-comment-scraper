@@ -1,11 +1,4 @@
 services:
-  selenium:
-    image: selenium/standalone-chrome
-    container_name: selenium
-    ports:
-      - "4444:4444"
-    shm_size: "2gb"
-
   yahoo-news-comment-scraper:
     build:
       context: ./
@@ -22,6 +15,7 @@ services:
         target: /workspace/yahoo-news-comment-scraper
     depends_on:
       - selenium
+      - postgresql_db
     working_dir: /workspace
     # コンテナ内でGPUを使う場合は以下の設定を追加する
     # NVIDIA Container Toolkitをインストールしていないと使えない
@@ -37,3 +31,25 @@ services:
     #   - NVIDIA_VISIBLE_DEVICES=all
     #   - NVIDIA_DRIVER_CAPABILITIES=all
     command: sleep infinity
+
+  selenium:
+    image: selenium/standalone-chrome
+    container_name: selenium
+    ports:
+      - "4444:4444"
+    shm_size: "2gb"
+
+  postgresql_db:
+    image: postgres:16.4
+    container_name: postgresql_db
+    environment:
+      POSTGRES_USER: kjqw
+      POSTGRES_PASSWORD: 1122
+      POSTGRES_DB: yahoo_news
+    ports:
+      - "5432:5432"
+    shm_size: "2gb"
+    volumes:
+      - type: bind
+        source: ../db_data
+        target: /var/lib/postgresql/data
