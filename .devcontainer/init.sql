@@ -1,27 +1,25 @@
--- バージョン管理用テーブル
-CREATE TABLE IF NOT EXISTS versions (
-    version_id SERIAL PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- スクレイピング結果の保存用テーブル
 CREATE TABLE IF NOT EXISTS articles (
     article_id SERIAL PRIMARY KEY,
-    link TEXT NOT NULL,
-    title TEXT,
+    article_link TEXT,
+    article_title TEXT,
     author TEXT,
     posted_time TEXT,
     ranking INTEGER,
-    comments_count_per_hour INTEGER,
-    scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    version_id INTEGER REFERENCES versions (version_id) ON DELETE CASCADE -- バージョン参照
+    comment_count_per_hour INTEGER,
+    scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- エラーログ用テーブル
-CREATE TABLE IF NOT EXISTS errors (
-    error_id SERIAL PRIMARY KEY,
-    error_message TEXT,
-    error_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    function_name TEXT,
-    article_id INTEGER REFERENCES articles (article_id) ON DELETE SET NULL
+CREATE TABLE IF NOT EXISTS comments (
+    comment_id SERIAL PRIMARY KEY,
+    article_id INTEGER REFERENCES articles (article_id) ON DELETE CASCADE,
+    parent_comment_id INTEGER REFERENCES comments (comment_id) ON DELETE CASCADE,
+    username TEXT,
+    user_link TEXT,
+    posted_time TEXT,
+    content TEXT,
+    agreements_count INTEGER,
+    acknowledgements_count INTEGER,
+    disagreements_count INTEGER,
+    reply_count INTEGER,
+    scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
