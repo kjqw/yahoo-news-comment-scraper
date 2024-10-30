@@ -46,6 +46,7 @@ services:
       POSTGRES_USER: kjqw
       POSTGRES_PASSWORD: 1122
       POSTGRES_DB: yahoo_news
+      TZ: Asia/Tokyo
     ports:
       - "5432:5432"
     shm_size: "2gb"
