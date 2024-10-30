@@ -14,7 +14,11 @@
 sudo rm -r /workspace/yahoo-news-comment-scraper/db_data && mkdir /workspace/yahoo-news-comment-scraper/db_data
 ```
 
-`db_data/`を消して作り直すだけではなぜかうまくいかなかった。`docker-compose.yaml`があるディレクトリで`docker compose down -v`を実行すると、変更が反映された。
+`db_data/`を消して作り直すだけではなぜかうまくいかなかった。`docker-compose.yaml`があるディレクトリで以下を実行すると、変更が反映された。
+
+```sh
+docker compose down -v
+```
 
 ## データベースに接続するコマンド
 
