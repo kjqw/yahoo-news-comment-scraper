@@ -1,8 +1,9 @@
 import inspect
 import re
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+import psycopg2
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -68,7 +69,7 @@ def get_comment_sections(driver: webdriver) -> list[WebElement]:
 
 
 def list_to_xpath(base_xpath: str, current_indices: list[int]) -> str:
-    """
+    r"""
     与えられたリストを元に、base_xpathの[i\d+]を置換してXPathを生成する関数。
 
     Parameters
@@ -132,7 +133,7 @@ def generate_next_list(
 def find_all_combinations(
     driver: webdriver, base_xpath: str, max_indices: list[int]
 ) -> tuple[list[str], list[WebElement]]:
-    """
+    r"""
     指定されたXPathで[i\d+]のすべての組み合わせに一致する要素と、そのXPathを取得する。
 
     Parameters
@@ -153,7 +154,7 @@ def find_all_combinations(
     def generate_xpath_combinations(
         base_xpath: str, max_indices: list[int]
     ) -> list[str]:
-        """
+        r"""
         すべてのインデックスの組み合わせに基づいてXPathを生成する。
 
         Parameters
@@ -325,3 +326,50 @@ def get_filtered_vars(pattern: str = None) -> dict[str, str]:
     }
 
     return filtered_vars_values
+
+
+def execute_query(
+    query: str,
+    db_config: dict = {
+        "host": "postgresql_db",
+        "database": "yahoo_news",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    },
+    commit: bool = False,
+) -> list[tuple]:
+    """
+    指定されたクエリを実行し、結果を取得する関数。
+
+    Parameters
+    ----------
+    query : str
+        実行するクエリ
+    commit : bool, optional
+        データ変更が必要な場合にコミットするためのオプション（デフォルトはFalse）
+
+    Returns
+    -------
+    list[tuple]
+        クエリの結果
+    """
+    conn = None
+    result = []
+    try:
+        conn = psycopg2.connect(**db_config)
+        with conn.cursor() as cur:
+            cur.execute(query)
+            if commit:
+                conn.commit()
+            else:
+                result = cur.fetchall()
+    except Exception as e:
+        if conn:
+            conn.rollback()  # エラー発生時にロールバック
+        print(f"データベースエラー: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+    return result

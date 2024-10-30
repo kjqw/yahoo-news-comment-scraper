@@ -43,7 +43,8 @@
                 "mhutchie.git-graph",
                 "eamodio.gitlens",
                 "github.copilot",
-                "oderwat.indent-rainbow"
+                "oderwat.indent-rainbow",
+                "cweijan.vscode-postgresql-client2"
             ]
         }
     }

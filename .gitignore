@@ -1,7 +1,10 @@
+__pycache__/
+.venv/
+
 data/
+db_data/
 html/
 orders/
-__pycache__/
 
 test*
 
