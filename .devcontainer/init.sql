@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS articles (
     posted_time TEXT,
     ranking INTEGER,
     comment_count_per_hour INTEGER,
+    total_comment_count_with_reply INTEGER,
+    total_comment_count_without_reply INTEGER,
     scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -16,7 +18,7 @@ CREATE TABLE IF NOT EXISTS comments (
     username TEXT,
     user_link TEXT,
     posted_time TEXT,
-    content TEXT,
+    comment_text TEXT,
     agreements_count INTEGER,
     acknowledgements_count INTEGER,
     disagreements_count INTEGER,
