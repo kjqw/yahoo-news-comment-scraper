@@ -52,9 +52,7 @@ class DBBase:
             with conn.cursor() as cur:
                 cur.execute(query, values)
                 conn.commit()
-            print(f"{table_name} にデータを保存しました。")
         except Exception as e:
-            print(f"エラーが発生しました: {e}")
             if conn:
                 conn.rollback()  # エラー発生時にロールバック
         finally:
