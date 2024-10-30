@@ -68,7 +68,7 @@ def get_comment_sections(driver: webdriver) -> list[WebElement]:
 
 
 def list_to_xpath(base_xpath: str, current_indices: list[int]) -> str:
-    """
+    r"""
     与えられたリストを元に、base_xpathの[i\d+]を置換してXPathを生成する関数。
 
     Parameters
@@ -132,7 +132,7 @@ def generate_next_list(
 def find_all_combinations(
     driver: webdriver, base_xpath: str, max_indices: list[int]
 ) -> tuple[list[str], list[WebElement]]:
-    """
+    r"""
     指定されたXPathで[i\d+]のすべての組み合わせに一致する要素と、そのXPathを取得する。
 
     Parameters
@@ -153,7 +153,7 @@ def find_all_combinations(
     def generate_xpath_combinations(
         base_xpath: str, max_indices: list[int]
     ) -> list[str]:
-        """
+        r"""
         すべてのインデックスの組み合わせに基づいてXPathを生成する。
 
         Parameters
