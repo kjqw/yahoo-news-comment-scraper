@@ -1,5 +1,7 @@
+import sys
 from collections import defaultdict
 from math import ceil
+from pathlib import Path
 
 import functions
 import psycopg2
@@ -11,6 +13,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from tqdm import tqdm
 from xpaths.xpath_article_comment_page import *
+
+sys.path.append(str(Path(__file__).parents[1]))
+
+import db_manager
 
 
 def get_total_comment_count(driver: webdriver) -> list[str]:
@@ -204,12 +210,12 @@ def get_article_comments(
             get_total_comment_count(driver)
         )
 
-        functions.execute_query(
+        db_manager.execute_query(
             f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
             DB_CONFIG,
             commit=True,
         )
-        functions.execute_query(
+        db_manager.execute_query(
             f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
             DB_CONFIG,
             commit=True,
@@ -237,7 +243,7 @@ def get_article_comments(
                 )
 
                 general_comment.article_id = article_id
-                general_comment.comment_id = functions.execute_query(
+                general_comment.comment_id = db_manager.execute_query(
                     "SELECT COALESCE(MAX(comment_id) + 1, 1) AS next_comment_id FROM comments"
                 )[0][0]
 
@@ -263,7 +269,7 @@ def get_article_comments(
 
                         reply_comment.parent_comment_id = general_comment.comment_id
                         reply_comment.article_id = article_id
-                        reply_comment.comment_id = functions.execute_query(
+                        reply_comment.comment_id = db_manager.execute_query(
                             "SELECT COALESCE(MAX(comment_id) + 1, 1) AS next_comment_id FROM comments"
                         )[0][0]
 
@@ -292,7 +298,7 @@ if __name__ == "__main__":
     }
 
     # 記事のリンクを取得
-    article_links = functions.execute_query(
+    article_links = db_manager.execute_query(
         "SELECT article_id, article_link FROM articles"
     )
     article_comment_links = [
