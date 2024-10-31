@@ -14,6 +14,8 @@
                         "source.fixAll.markdownlint": "explicit"
                     }
                 },
+                "markdown-preview-enhanced.previewTheme": "github-dark.css",
+                "markdown-preview-enhanced.mermaidTheme": "dark",
                 "markdownlint.config": {
                     "MD024": false,
                     "MD033": false
@@ -40,6 +42,8 @@
                 "ms-toolsai.jupyter",
                 "yzhang.markdown-all-in-one",
                 "davidanson.vscode-markdownlint",
+                "shd101wyy.markdown-preview-enhanced",
+                "bpruitt-goddard.mermaid-markdown-syntax-highlighting",
                 "mhutchie.git-graph",
                 "eamodio.gitlens",
                 "github.copilot",
