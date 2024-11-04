@@ -25,5 +25,9 @@ user_nodes = {
 # %%
 user_nodes[0].__dict__
 # %%
-user_nodes[1].__dict__
+for user_node in user_nodes:
+    for k in range(k_max):
+        user_nodes[user_node].update_state(k)
+# %%
+user_nodes[0].__dict__
 # %%
