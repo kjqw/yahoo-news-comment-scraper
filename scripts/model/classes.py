@@ -1,6 +1,12 @@
 import numpy as np
 import scipy as sp
 
+STATE_MIN, STATE_MAX = -1, 1
+NOISE_MEAN, NOISE_STD = 0, 0.1
+WEIGHT_MIN, WEIGHT_MAX = -1, 1
+BIAS_MIN, BIAS_MAX = -1, 1
+STRENGTH_MIN, STRENGTH_MAX = 0, 1
+
 
 class Node:
     """
@@ -40,7 +46,7 @@ class Node:
 
         if is_random:
             # random_state = np.random.normal(0, 1, (1, state_dim))
-            random_state = np.random.uniform(-1, 1, (1, state_dim))
+            random_state = np.random.uniform(STATE_MIN, STATE_MAX, (1, state_dim))
             self.states = {0: random_state}
         else:
             self.states = states
@@ -84,10 +90,10 @@ class UserNode(Node):
             # self.b = np.random.normal(0, 1, (state_dim, 1))
             # self.strengths = {0: np.random.normal(0, 1)}
 
-            self.W_s = np.random.uniform(-1, 1, (state_dim, state_dim))
-            self.W_p = np.random.uniform(-1, 1, (state_dim, state_dim))
-            self.b = np.random.uniform(-1, 1, (state_dim, 1))
-            self.strengths = {0: np.random.uniform(0, 1)}
+            self.W_s = np.random.uniform(WEIGHT_MIN, WEIGHT_MAX, (state_dim, state_dim))
+            self.W_p = np.random.uniform(WEIGHT_MIN, WEIGHT_MAX, (state_dim, state_dim))
+            self.b = np.random.uniform(BIAS_MIN, BIAS_MAX, (state_dim, 1))
+            self.strengths = {0: np.random.uniform(STRENGTH_MIN, STRENGTH_MAX)}
 
         else:
             self.W_s = W_s
@@ -100,6 +106,7 @@ class UserNode(Node):
         current_state: np.ndarray,
         parent_states: np.ndarray,
         parent_strength: np.ndarray,
+        add_noise: bool = False,
     ) -> np.ndarray:
         """
         ユーザのノードの状態を更新する
@@ -121,5 +128,8 @@ class UserNode(Node):
             + self.W_s @ current_state
             + self.b
         )
+
+        if add_noise:
+            new_state += np.random.normal(NOISE_MEAN, NOISE_STD, (1, self.state_dim))
 
         return new_state
