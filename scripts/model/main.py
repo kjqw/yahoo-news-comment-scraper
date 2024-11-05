@@ -1,33 +1,30 @@
 # %%
-import random
-
-import classes
-import numpy as np
+# インポート
+from classes import Nodes
 
 # %%
-user_num = 5
-state_dim = 4
-k_max = 3
-is_random = True
-parents = {
-    i: {
-        j: random.choices([None] + [x for x in range(user_num) if x != i], k=2)
-        for j in range(k_max)
-    }
-    for i in range(user_num)
-}
-parents
+# シミュレーションパラメータ設定
+user_num = 5  # ユーザー数
+article_num = 3  # 記事数
+state_dim = 4  # 状態ベクトルの次元数
+k_max = 10  # シミュレーションの時刻の最大値
+
 # %%
-user_nodes = {
-    i: classes.UserNode(i, parents[i], state_dim, is_random=is_random)
-    for i in range(user_num)
-}
+# ノードの生成と初期化
+nodes = Nodes()
+nodes.generate_random_nodes(
+    user_num=user_num, article_num=article_num, state_dim=state_dim, k_max=k_max
+)
+
 # %%
-user_nodes[0].__dict__
+# 全ユーザーの状態更新
+nodes.update_all_states(k_max=k_max)
+
 # %%
-for user_node in user_nodes:
-    for k in range(k_max):
-        user_nodes[user_node].update_state(k)
-# %%
-user_nodes[0].__dict__
+# 結果の表示
+for user_id, user_node in nodes.user_nodes.items():
+    print(f"ユーザー {user_id} の状態遷移:")
+    for k, (state, influence) in user_node.states.items():
+        print(f"  時刻 {k}: 状態 = {state}, 影響度 = {influence}")
+    print()
 # %%
