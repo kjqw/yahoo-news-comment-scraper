@@ -109,41 +109,41 @@ class Comment(DBBase):
     """
 
 
-if __name__ == "__main__":
-    # 使用例
-    DB_CONFIG = {
-        "host": "postgresql_db",
-        "database": "yahoo_news",
-        "user": "kjqw",
-        "password": "1122",
-        "port": "5432",
-    }
+# if __name__ == "__main__":
+#     # 使用例
+#     DB_CONFIG = {
+#         "host": "postgresql_db",
+#         "database": "yahoo_news",
+#         "user": "kjqw",
+#         "password": "1122",
+#         "port": "5432",
+#     }
 
-    article = Article(
-        article_id=1,
-        article_link="https://example.com/article1",
-        title="Example Article",
-        author="Author Name",
-        posted_time="2024-10-30 15:00:00",
-        ranking=1,
-    )
+#     article = Article(
+#         article_id=1,
+#         article_link="https://example.com/article1",
+#         title="Example Article",
+#         author="Author Name",
+#         posted_time="2024-10-30 15:00:00",
+#         ranking=1,
+#     )
 
-    comment = Comment(
-        article_id=1,
-        parent_comment_id=None,
-        username="user123",
-        user_link="https://example.com/user123",
-        posted_time="2024-10-30 15:30:00",
-        content="This is a sample comment.",
-        agreements_count=10,
-        acknowledgements_count=2,
-        disagreements_count=1,
-        reply_count=0,
-    )
+#     comment = Comment(
+#         article_id=1,
+#         parent_comment_id=None,
+#         username="user123",
+#         user_link="https://example.com/user123",
+#         posted_time="2024-10-30 15:30:00",
+#         content="This is a sample comment.",
+#         agreements_count=10,
+#         acknowledgements_count=2,
+#         disagreements_count=1,
+#         reply_count=0,
+#     )
 
-    # データベースに保存
-    article.save_data(DB_CONFIG, "articles")
-    comment.save_data(DB_CONFIG, "comments")
+#     # データベースに保存
+#     article.save_data(DB_CONFIG, "articles")
+#     comment.save_data(DB_CONFIG, "comments")
 
 
 # class Article(DBBase():):
