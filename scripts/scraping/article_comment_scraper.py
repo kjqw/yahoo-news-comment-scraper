@@ -294,15 +294,31 @@ if __name__ == "__main__":
     }
 
     # 記事のリンクを取得
+    # article_links = db_manager.execute_query(
+    #     "SELECT article_id, article_link FROM articles"
+    # )
     article_links = db_manager.execute_query(
-        "SELECT article_id, article_link FROM articles"
+        """
+        SELECT article_id, article_link, ranking
+        FROM (
+            SELECT article_id, article_link, ranking,
+                ROW_NUMBER() OVER (PARTITION BY article_link ORDER BY ranking) AS rn
+            FROM articles
+        ) AS ranked_articles
+        WHERE rn = 1
+        ORDER BY ranking ASC
+        LIMIT 5
+        """
     )
+
+    # print(article_links)
+
+    # 記事ごとにコメントを取得
     article_comment_links = [
         (article_id, article_link + "/comments")
-        for article_id, article_link in article_links
+        for article_id, article_link, ranking in article_links
     ]
-
-    for article_comment_link in article_comment_links[:2]:
+    for article_comment_link in article_comment_links:
         get_article_comments(
             article_comment_link[0],
             article_comment_link[1],
