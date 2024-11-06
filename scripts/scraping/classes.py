@@ -1,9 +1,14 @@
+import sys
 from datetime import datetime
+from pathlib import Path
 
-import psycopg2
+import functions
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
+
+sys.path.append(str(Path(__file__).parents[1]))
+
+import db_manager
 
 
 class DBBase:
@@ -20,13 +25,7 @@ class DBBase:
     def save_data(
         self,
         table_name: str,
-        db_config: dict[str, str] = {
-            "host": "postgresql_db",
-            "database": "yahoo_news",
-            "user": "kjqw",
-            "password": "1122",
-            "port": "5432",
-        },
+        db_config: dict = db_manager.DB_CONFIG,
     ) -> None:
         """
         データベースに保存する。
@@ -40,25 +39,11 @@ class DBBase:
         """
         data = self.export_data()
         columns = ", ".join(data.keys())
-        placeholders = ", ".join(["%s"] * len(data))
-        values = tuple(data.values())
+        values = ", ".join([f"'{value}'" for value in data.values()])
 
-        query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders});"
+        query = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
 
-        conn = None
-        try:
-            # データベースに接続し、データを挿入
-            conn = psycopg2.connect(**db_config)
-            with conn.cursor() as cur:
-                cur.execute(query, values)
-                conn.commit()
-        except Exception as e:
-            if conn:
-                conn.rollback()  # エラー発生時にロールバック
-        finally:
-            # 接続を確実に閉じる
-            if conn:
-                conn.close()
+        db_manager.execute_query(query, db_config, commit=True)
 
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
