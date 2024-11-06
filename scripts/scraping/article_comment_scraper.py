@@ -176,9 +176,6 @@ def get_article_comments(
     """
 
     try:
-        # スクレイピングの結果を格納する辞書を初期化
-        data = defaultdict(str)
-
         xpaths_general_comments = {
             "username": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
             "user_link": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
@@ -223,7 +220,6 @@ def get_article_comments(
 
         # 最大数に達するまでコメントを取得
         page = 1
-        data["comments"] = []
         while (page - 1) * 10 < max_comments:
             # 一般コメントのセクションを取得
             general_comment_sections = driver.find_elements(
