@@ -23,10 +23,10 @@ import db_manager
 
 # %%
 # シミュレーションパラメータ設定
-user_num = 5  # ユーザー数
-article_num = 2  # 記事数
-state_dim = 3  # 状態ベクトルの次元数
-k_max = 4  # シミュレーションの時刻の最大値
+user_num = 10  # ユーザー数
+article_num = 4  # 記事数
+state_dim = 5  # 状態ベクトルの次元数
+k_max = 100  # シミュレーションの時刻の最大値
 db_config = {
     "host": "postgresql_db",
     "database": "test_db",
