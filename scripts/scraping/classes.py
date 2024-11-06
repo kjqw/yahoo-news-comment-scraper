@@ -88,6 +88,8 @@ class Article(DBBase):
     author: str,
     ranking: int,
     comment_count_per_hour: int,
+    total_comment_count_with_reply: int,
+    total_comment_count_without_reply: int,
     """
 
 
