@@ -206,6 +206,12 @@ def get_article_comments(
         total_comment_count_with_reply, total_comment_count_without_reply = (
             get_total_comment_count(driver)
         )
+        total_comment_count_with_reply = functions.normalize_number(
+            total_comment_count_with_reply
+        )
+        total_comment_count_without_reply = functions.normalize_number(
+            total_comment_count_without_reply
+        )
 
         db_manager.execute_query(
             f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
