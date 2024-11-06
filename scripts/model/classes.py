@@ -169,14 +169,15 @@ class Nodes:
     全ノードを管理し、親子関係と状態遷移を統括するクラス。
     """
 
-    def __init__(self, article_num: int, user_num: int):
+    def __init__(self, article_num: int, user_num: int, state_dim: int, k_max: int):
         self.article_num = article_num
         self.user_num = user_num
+        self.state_dim = state_dim
         self.user_nodes = {}  # ユーザーコメントノードの辞書
         self.article_nodes = {}  # 記事ノードの辞書
-        self.k_max = 0  # 最大時刻
+        self.k_max = k_max
 
-    def generate_random_nodes(self, state_dim: int, k_max: int) -> None:
+    def generate_random_nodes(self, state_dim: int) -> None:
         """
         ノードをランダムに生成し、時刻 k_max まで親子関係を設定するメソッド。
 
@@ -187,11 +188,12 @@ class Nodes:
         k_max : int
             最大時刻
         """
-        self.k_max = k_max
 
         # 記事ノードの生成
         for article_id in range(self.article_num):
-            article_node = ArticleNode(id=article_id, state_dim=state_dim, k_max=k_max)
+            article_node = ArticleNode(
+                id=article_id, state_dim=state_dim, k_max=self.k_max
+            )
             self.article_nodes[article_id] = article_node
 
         # ユーザーコメントノードの生成
@@ -200,7 +202,7 @@ class Nodes:
             self.user_nodes[user_id] = user_node
 
             # 各時刻における親子関係の設定
-            for k in range(1, k_max + 1):
+            for k in range(1, self.k_max + 1):
                 # 親記事ノードをランダムに選択
                 parent_article_id = random.randint(0, self.article_num - 1)
                 parent_article_node = self.article_nodes[parent_article_id]
@@ -340,3 +342,79 @@ class Nodes:
                     ON CONFLICT (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step) DO NOTHING;
                     """
                     db_manager.execute_query(query, db_config=db_config, commit=True)
+
+    def load_from_db(self, db_config: dict = db_manager.DB_CONFIG) -> None:
+        """
+        データベースからノードデータを読み込み、Nodesオブジェクトを再構築するメソッド。
+
+        Parameters
+        ----------
+        db_config : dict, Optional
+            データベース接続設定を含む辞書
+        """
+        # 記事ノードの読み込み
+        query = "SELECT article_id FROM articles"
+        article_data = db_manager.execute_query(query, db_config=db_config)
+
+        for row in article_data:
+            article_id = row[0]
+            article_node = ArticleNode(
+                id=article_id, state_dim=self.state_dim, k_max=self.k_max
+            )
+            self.article_nodes[article_id] = article_node
+
+        # コメントノードの読み込み
+        query = "SELECT comment_id FROM comments"
+        comment_data = db_manager.execute_query(query, db_config=db_config)
+
+        for row in comment_data:
+            comment_id = row[0]
+            comment_node = UserCommentNode(id=comment_id, state_dim=self.state_dim)
+            self.user_nodes[comment_id] = comment_node
+
+        # ノードの状態と影響度の読み込み
+        query = "SELECT node_id, node_type, time_step, state, strength FROM node_states"
+        state_data = db_manager.execute_query(query, db_config=db_config)
+
+        for row in state_data:
+            node_id, node_type, time_step, state, strength = row
+            state_array = np.array(state).reshape(-1, 1)
+            if node_type == "article":
+                self.article_nodes[node_id].states[time_step] = state_array
+                self.article_nodes[node_id].strengths[time_step] = strength
+            elif node_type == "comment":
+                self.user_nodes[node_id].states[time_step] = state_array
+                self.user_nodes[node_id].strengths[time_step] = strength
+
+        # 親子関係の読み込み
+        query = "SELECT parent_node_id, parent_node_type, child_node_id, time_step FROM node_relations"
+        relation_data = db_manager.execute_query(query, db_config=db_config)
+
+        for row in relation_data:
+            parent_id, parent_type, child_id, time_step = row
+            parent_node = (
+                self.article_nodes[parent_id]
+                if parent_type == "article"
+                else self.user_nodes[parent_id]
+            )
+            child_node = self.user_nodes[child_id]
+            child_node.add_parent(time_step, parent_node)
+            parent_node.add_child(time_step, child_node)
+
+        # 重み行列の読み込み
+        query = "SELECT node_id, weight_type, weight_matrix FROM weights"
+        weight_data = db_manager.execute_query(query, db_config=db_config)
+
+        for row in weight_data:
+            node_id, weight_type, weight_matrix = row
+            weight_array = np.array(weight_matrix)
+            self.user_nodes[node_id].weights[weight_type] = weight_array
+
+        # バイアスベクトルの読み込み
+        query = "SELECT node_id, bias_vector FROM biases"
+        bias_data = db_manager.execute_query(query, db_config=db_config)
+
+        for row in bias_data:
+            node_id, bias_vector = row
+            bias_array = np.array(bias_vector).reshape(-1, 1)
+            self.user_nodes[node_id].bias = bias_array
