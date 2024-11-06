@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import random
+import sys
+from pathlib import Path
 
 import numpy as np
+
+sys.path.append(str(Path(__file__).parents[1]))
+
+import db_manager
 
 # パラメータ設定
 INITIAL_STATE_MIN, INITIAL_STATE_MAX = -1, 1  # 初期状態値の範囲
@@ -252,3 +258,85 @@ class Nodes:
                         strength_article,
                         strength_comment,
                     )
+
+    def save_to_db(self, db_config: dict = db_manager.DB_CONFIG) -> None:
+        """
+        ノードの状態、親子関係、重み、バイアスをデータベースに保存するメソッド。
+
+        Parameters
+        ----------
+        db_config : dict, Optional
+            データベース接続設定を含む辞書
+        """
+        # 記事ノードの保存（先にarticlesテーブルに追加）
+        for node in self.article_nodes.values():
+            query = f"""
+            INSERT INTO articles (article_id)
+            VALUES ({node.id})
+            ON CONFLICT (article_id) DO NOTHING;
+            """
+            db_manager.execute_query(query, db_config=db_config, commit=True)
+
+        # コメントノードの保存（先にcommentsテーブルに追加）
+        for node in self.user_nodes.values():
+            query = f"""
+            INSERT INTO comments (comment_id)
+            VALUES ({node.id})
+            ON CONFLICT (comment_id) DO NOTHING;
+            """
+            db_manager.execute_query(query, db_config=db_config, commit=True)
+
+        # 状態情報の保存
+        for node in self.article_nodes.values():
+            for k, state in node.states.items():
+                query = f"""
+                INSERT INTO node_states (node_id, node_type, time_step, state, strength)
+                VALUES ({node.id}, 'article', {k}, ARRAY{state.tolist()}, {node.strengths[k]})
+                ON CONFLICT (node_id, node_type, time_step) DO UPDATE
+                SET state = EXCLUDED.state, strength = EXCLUDED.strength;
+                """
+                db_manager.execute_query(query, db_config=db_config, commit=True)
+
+        for node in self.user_nodes.values():
+            for k, state in node.states.items():
+                query = f"""
+                INSERT INTO node_states (node_id, node_type, time_step, state, strength)
+                VALUES ({node.id}, 'comment', {k}, ARRAY{state.tolist()}, {node.strengths[k]})
+                ON CONFLICT (node_id, node_type, time_step) DO UPDATE
+                SET state = EXCLUDED.state, strength = EXCLUDED.strength;
+                """
+                db_manager.execute_query(query, db_config=db_config, commit=True)
+
+            # 重みの保存
+            for weight_type, weight_matrix in node.weights.items():
+                query = f"""
+                INSERT INTO weights (node_id, weight_type, weight_matrix)
+                VALUES ({node.id}, '{weight_type}', ARRAY{weight_matrix.tolist()})
+                ON CONFLICT (node_id, weight_type) DO UPDATE
+                SET weight_matrix = EXCLUDED.weight_matrix;
+                """
+                db_manager.execute_query(query, db_config=db_config, commit=True)
+
+            # バイアスの保存
+            query = f"""
+            INSERT INTO biases (node_id, bias_vector)
+            VALUES ({node.id}, ARRAY{node.bias.tolist()})
+            ON CONFLICT (node_id) DO UPDATE
+            SET bias_vector = EXCLUDED.bias_vector;
+            """
+            db_manager.execute_query(query, db_config=db_config, commit=True)
+
+        # 親子関係の保存
+        for user_id, user_node in self.user_nodes.items():
+            for k, parents in user_node.parents.items():
+                for parent_node in parents:
+                    parent_type = (
+                        "article" if isinstance(parent_node, ArticleNode) else "comment"
+                    )
+                    child_type = "comment"
+                    query = f"""
+                    INSERT INTO node_relations (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step)
+                    VALUES ({parent_node.id}, '{parent_type}', {user_node.id}, '{child_type}', {k})
+                    ON CONFLICT (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step) DO NOTHING;
+                    """
+                    db_manager.execute_query(query, db_config=db_config, commit=True)

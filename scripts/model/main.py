@@ -23,3 +23,12 @@ nodes.update_all_states()
 # %%
 nodes.user_nodes[2].states
 # %%
+db_config = {
+    "host": "postgresql_db",
+    "database": "test_db",
+    "user": "kjqw",
+    "password": "1122",
+    "port": "5432",
+}
+nodes.save_to_db(db_config)
+# %%
