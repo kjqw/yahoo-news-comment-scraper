@@ -106,13 +106,20 @@ class UserCommentNode(Node):
         """
         親ノードの状態に基づき、ユーザーコメントノードの状態を更新するメソッド。
 
-        Parameters:
-        - k: 現在の時刻
-        - state_parent_article: 親記事の状態ベクトル（時刻 k-1）
-        - state_parent_comment: 親コメントの状態ベクトル（時刻 k-1）
-        - strength_article: 親記事の影響度（時刻 k-1）
-        - strength_comment: 親コメントの影響度（時刻 k-1）
-        - add_noise: ノイズを加えるかどうか
+        Parameters
+        ----------
+        k : int
+            現在の時刻
+        state_parent_article : np.ndarray
+            親記事の状態ベクトル（時刻 k-1）
+        state_parent_comment : np.ndarray
+            親コメントの状態ベクトル（時刻 k-1）
+        strength_article : float
+            親記事の影響度（時刻 k-1）
+        strength_comment : float
+            親コメントの影響度（時刻 k-1）
+        add_noise : bool, Optional
+            ノイズを加えるかどうか
         """
         # 指定があればノイズを加える
         noise = (
@@ -167,9 +174,12 @@ class Nodes:
         """
         ノードをランダムに生成し、時刻 k_max まで親子関係を設定するメソッド。
 
-        Parameters:
-        - state_dim: 状態ベクトルの次元
-        - k_max: 最大時刻
+        Parameters
+        ----------
+        state_dim : int
+            状態ベクトルの次元
+        k_max : int
+            最大時刻
         """
         self.k_max = k_max
 
