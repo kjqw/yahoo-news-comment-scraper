@@ -243,6 +243,7 @@ def get_article_comments(
                 general_comment.get_info(
                     general_comment_section, xpaths_general_comments
                 )
+                general_comment.normalize_number()
 
                 general_comment.article_id = article_id
                 general_comment.comment_id = db_manager.execute_query(
@@ -268,6 +269,7 @@ def get_article_comments(
                         reply_comment.get_info(
                             reply_comment_section, xpaths_reply_comments
                         )
+                        reply_comment.normalize_number()
 
                         reply_comment.parent_comment_id = general_comment.comment_id
                         reply_comment.article_id = article_id

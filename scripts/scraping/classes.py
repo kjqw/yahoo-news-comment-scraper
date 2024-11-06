@@ -78,6 +78,30 @@ class DBBase:
         except:
             pass
 
+    def normalize_number(self) -> None:
+        """
+        バグ対処の応急処置
+        """
+
+        keys = [
+            "ranking",
+            "comment_count_per_hour",
+            "total_comment_count_with_reply",
+            "total_comment_count_without_reply",
+            "agreements_count",
+            "acknowledgements_count",
+            "disagreements_count",
+            "reply_count",
+        ]
+        for key in keys:
+            # 属性が存在し、Noneではない場合に処理を実行
+            if hasattr(self, key) and getattr(self, key) is not None:
+                try:
+                    value = functions.normalize_number(getattr(self, key))
+                    setattr(self, key, value)
+                except:
+                    pass
+
 
 class Article(DBBase):
     """
