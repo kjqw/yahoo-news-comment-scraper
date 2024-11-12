@@ -35,8 +35,6 @@ class Node:
         self.states[self.k] = self.generate_random_state()
         self.strengths[self.k] = self.generate_random_strength()
 
-        self.k += 1
-
     def generate_random_state(self) -> np.ndarray:
         """
         状態ベクトルをランダムに初期化するメソッド。
@@ -115,6 +113,7 @@ class UserCommentNode(Node):
             else np.zeros((self.state_dim, 1))
         )
 
+        self.k += 1
         # 前のステップの状態を取得
         previous_state = self.states[self.k - 1]
 
@@ -144,7 +143,6 @@ class UserCommentNode(Node):
         # 新しい状態と影響度を保存
         self.states[self.k] = new_state
         self.strengths[self.k] = self.generate_random_strength()
-        self.k += 1
 
 
 class ArticleNode(Node):
