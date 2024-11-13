@@ -366,3 +366,22 @@ def ndarray_to_ARRAY(ndarray: np.ndarray) -> str:
     else:
         # 二次元以上の配列の場合、各行に対して再帰的にARRAY形式に変換し、リストにまとめる
         return f"ARRAY[{', '.join(ndarray_to_ARRAY(row) for row in ndarray)}]"
+
+
+def get_params(user_id: int, db_config: dict) -> dict:
+    data = db_manager.execute_query(
+        f"""
+        SELECT * FROM params WHERE user_id = {user_id};
+        """,
+        db_config,
+    )
+    columns = db_manager.execute_query(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'params'
+        ORDER BY ordinal_position;
+        """,
+        db_config,
+    )
+    return {column[0]: np.array(data[0][i]) for i, column in enumerate(columns)}

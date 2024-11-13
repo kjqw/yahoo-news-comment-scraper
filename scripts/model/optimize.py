@@ -335,27 +335,6 @@ for user_id in range(article_num, article_num + user_num):
     params = optimize_params(training_data, user_id)
     save_params(params, user_id, db_config)
 
-
 # %%
-def get_params(user_id: int, db_config: dict) -> dict:
-    data = db_manager.execute_query(
-        f"""
-        SELECT * FROM params WHERE user_id = {user_id};
-        """,
-        db_config,
-    )
-    columns = db_manager.execute_query(
-        """
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = 'params'
-        ORDER BY ordinal_position;
-        """,
-        db_config,
-    )
-    return {column[0]: np.array(data[0][i]) for i, column in enumerate(columns)}
-
-
-# %%
-get_params(article_num, db_config)
+utils.get_params(article_num, db_config)
 # %%
