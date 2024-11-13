@@ -133,12 +133,26 @@ class UserCommentNode(Node):
                 strength_comment = parent_node.strengths[k_parent]
 
         # 状態更新式に基づき新しい状態を計算
-        new_state = np.tanh(
-            self.weights["W_p"] @ state_parent_article * strength_article
-            + self.weights["W_q"] @ state_parent_comment * strength_comment
-            + self.weights["W_s"] @ previous_state
-            + self.bias
-            + noise
+        # new_state = np.tanh(
+        #     self.weights["W_p"] @ state_parent_article * strength_article
+        #     + self.weights["W_q"] @ state_parent_comment * strength_comment
+        #     + self.weights["W_s"] @ previous_state
+        #     + self.bias
+        #     + noise
+        # )
+
+        new_state = update_method(
+            previous_state,
+            self.weights["W_p"],
+            state_parent_article,
+            strength_article,
+            self.weights["W_q"],
+            state_parent_comment,
+            strength_comment,
+            self.weights["W_s"],
+            self.bias,
+            self.state_dim,
+            add_noise,
         )
 
         # 新しい状態と影響度を保存
@@ -433,3 +447,38 @@ def get_parent_state_and_strength(node_id: int, k: int, db_config: dict):
         (np.array(i[0][0]).reshape(state_dim, 1), np.array(i[0][1]), i[0][2])
         for i in parent_states
     ]
+
+
+def update_method(
+    previous_state: np.ndarray,
+    W_p: np.ndarray,
+    state_parent_article: np.ndarray,
+    strength_article: float,
+    W_q: np.ndarray,
+    state_parent_comment: np.ndarray,
+    strength_comment: float,
+    W_s: np.ndarray,
+    b: np.ndarray,
+    state_dim: int,
+    add_noise: bool = True,
+) -> np.ndarray:
+    """
+    ユーザーコメントノードの状態を更新するメソッド。
+    """
+    # 指定があればノイズを加える
+    noise = (
+        np.random.normal(NOISE_MEAN, NOISE_STD, (state_dim, 1))
+        if add_noise
+        else np.zeros((state_dim, 1))
+    )
+
+    # 状態更新式に基づき新しい状態を計算
+    new_state = np.tanh(
+        W_p @ state_parent_article * strength_article
+        + W_q @ state_parent_comment * strength_comment
+        + W_s @ previous_state
+        + b
+        + noise
+    )
+
+    return new_state
