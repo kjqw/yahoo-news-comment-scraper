@@ -124,10 +124,14 @@ def loss_function(params, data, user_id):
 
 
 # %%
-def optimize_params(data, user_id):
-    initial_params = np.random.rand(4 * state_dim**2 + state_dim)
-    res = minimize(loss_function, initial_params, args=(data, user_id))
-    return res.x
+def optimize_params(data, user_id, epochs: int = 5):
+    initial_params = np.random.rand(3 * state_dim**2 + state_dim)
+
+    for epoch in range(epochs):
+        res = minimize(loss_function, initial_params, args=(data, user_id))
+        initial_params = res.x
+
+    return initial_params
 
 
 # %%
