@@ -369,6 +369,9 @@ def ndarray_to_ARRAY(ndarray: np.ndarray) -> str:
 
 
 def get_params(user_id: int, db_config: dict) -> dict:
+    """
+    特定の user_id のパラメータを取得して辞書形式で返す関数。
+    """
     data = execute_query(
         f"""
         SELECT * FROM params WHERE user_id = {user_id};
@@ -387,23 +390,21 @@ def get_params(user_id: int, db_config: dict) -> dict:
     return {column[0]: np.array(data[0][i]) for i, column in enumerate(columns)}
 
 
-def get_parent_state_and_strength(node_id, k, db_config):
-    parent_ids = execute_query(
+def get_parent_state_and_strength(node_id: int, k: int, db_config: dict):
+    """
+    指定された node_id と k の親ノードの状態と影響度を取得する関数。
+    """
+    # 親ノードのIDとkを取得
+    parent_ids, parent_ks = execute_query(
         f"""
-        SELECT parent_ids
+        SELECT parent_ids, parent_ks
         FROM nodes
         WHERE node_id = {node_id} AND k = {k}
         """,
         db_config,
-    )[0][0]
-    parent_ks = execute_query(
-        f"""
-        SELECT parent_ks
-        FROM nodes
-        WHERE node_id = {node_id} AND k = {k}
-        """,
-        db_config,
-    )[0][0]
+    )[0]
+
+    # 親ノードのstate, strength, node_typeを一度に取得
     parent_states = [
         execute_query(
             f"""
@@ -416,6 +417,8 @@ def get_parent_state_and_strength(node_id, k, db_config):
         )
         for parent_id, parent_k in zip(parent_ids, parent_ks)
     ]
+
+    # 親ノードのstate_dimを取得
     state_dim = execute_query(
         f"""
         SELECT state_dim
@@ -425,6 +428,7 @@ def get_parent_state_and_strength(node_id, k, db_config):
         db_config,
     )[0][0]
 
+    # 親ノードのstate, strength, node_typeを一部NumPy配列に変換して返す
     return [
         (np.array(i[0][0]).reshape(state_dim, 1), np.array(i[0][1]), i[0][2])
         for i in parent_states
