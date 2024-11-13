@@ -159,6 +159,19 @@ user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
 state_dim = df_data["state_dim"].values[0]
 k_max = df_data["k"].max()
 
+# メタデータidを取得
+metadata_id = db_manager.execute_query(
+    f"""
+    SELECT metadata_id
+    FROM metadata
+    WHERE article_num = {article_num}
+    AND user_num = {user_num}
+    AND state_dim = {state_dim}
+    AND k_max = {k_max}
+    """,
+    db_config,
+)[0][0]
+
 
 # %%
 def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
@@ -283,8 +296,8 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
 
     # パラメータをデータベースに保存
     query = f"""
-    INSERT INTO params (node_id, w_p_est, w_q_est, w_s_est, b_est)
-    VALUES ({user_id}, {W_p_str}, {W_q_str}, {W_s_str}, {b_str})
+    INSERT INTO params (node_id, metadata_id, w_p_est, w_q_est, w_s_est, b_est)
+    VALUES ({user_id}, {metadata_id}, {W_p_str}, {W_q_str}, {W_s_str}, {b_str})
     """
 
     db_manager.execute_query(
