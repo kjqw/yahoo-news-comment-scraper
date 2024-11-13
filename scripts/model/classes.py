@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import random
 import sys
 from pathlib import Path
@@ -26,14 +27,14 @@ class Node:
     def __init__(self, id: int, state_dim: int):
         self.id = id
         self.state_dim = state_dim
-        self.parents = {}  # 各時刻における親ノード
-        self.children = {}  # 各時刻における子ノード
+        self.k = 0  # 現在の時刻
+        self.parents = {self.k: []}  # 各時刻における親ノード
         self.states = {}  # 各時刻の状態ベクトル
         self.strengths = {}  # 各時刻の影響度
 
         # 初期時刻 k = 0 での状態と影響度を初期化
-        self.states[0] = self.generate_random_state()
-        self.strengths[0] = self.generate_random_strength()
+        self.states[self.k] = self.generate_random_state()
+        self.strengths[self.k] = self.generate_random_strength()
 
     def generate_random_state(self) -> np.ndarray:
         """
@@ -49,23 +50,20 @@ class Node:
         """
         return np.random.uniform(STRENGTH_MIN, STRENGTH_MAX)
 
-    def add_parent(self, k: int, parent_node: Node | None):
+    def add_parent(self, k_self: int, k_parent: int, parent_node: Node) -> None:
         """
         指定した時刻に親ノードを追加するメソッド。
-        """
-        if parent_node is not None:
-            if k not in self.parents:
-                self.parents[k] = []
-            self.parents[k].append(parent_node)
 
-    def add_child(self, k: int, child_node: Node | None):
+        Note
+        ----
+        ArticleNode は親ノードを持たない。
+        UserCommentNode は1つのArticleNodeと、0もしくは1つのUserCommentNodeを親ノードとして持つ。
         """
-        指定した時刻に子ノードを追加するメソッド。
-        """
-        if child_node is not None:
-            if k not in self.children:
-                self.children[k] = []
-            self.children[k].append(child_node)
+        # k_selfがself.parentsに存在しない場合は初期化
+        if k_self not in self.parents:
+            self.parents[k_self] = []
+
+        self.parents[k_self].append((k_parent, parent_node))
 
 
 class UserCommentNode(Node):
@@ -102,28 +100,10 @@ class UserCommentNode(Node):
 
     def update_state(
         self,
-        k: int,
-        state_parent_article: np.ndarray,
-        state_parent_comment: np.ndarray,
-        strength_article: float,
-        strength_comment: float,
         add_noise: bool = True,
     ) -> None:
         """
         親ノードの状態に基づき、ユーザーコメントノードの状態を更新するメソッド。
-
-        Parameters
-        ----------
-        k : int
-            現在の時刻
-        state_parent_article : np.ndarray
-            親記事の状態ベクトル（時刻 k-1）
-        state_parent_comment : np.ndarray
-            親コメントの状態ベクトル（時刻 k-1）
-        strength_article : float
-            親記事の影響度（時刻 k-1）
-        strength_comment : float
-            親コメントの影響度（時刻 k-1）
         add_noise : bool, Optional
             ノイズを加えるかどうか
         """
@@ -134,8 +114,23 @@ class UserCommentNode(Node):
             else np.zeros((self.state_dim, 1))
         )
 
-        # 前回の状態（時刻 k-1）を取得
-        previous_state = self.states.get(k - 1, self.states[0])
+        self.k += 1
+        # 前のステップの状態を取得
+        previous_state = self.states[self.k - 1]
+
+        # 親ノードの状態と影響度を取得
+        parent_nodes = self.parents[self.k]
+        state_parent_article = np.zeros((self.state_dim, 1))
+        strength_article = 0
+        state_parent_comment = np.zeros((self.state_dim, 1))
+        strength_comment = 0
+        for k_parent, parent_node in parent_nodes:
+            if isinstance(parent_node, ArticleNode):
+                state_parent_article = parent_node.states[k_parent]
+                strength_article = parent_node.strengths[k_parent]
+            elif isinstance(parent_node, UserCommentNode):
+                state_parent_comment = parent_node.states[k_parent]
+                strength_comment = parent_node.strengths[k_parent]
 
         # 状態更新式に基づき新しい状態を計算
         new_state = (
@@ -146,9 +141,9 @@ class UserCommentNode(Node):
             + noise
         )
 
-        # 新しい状態と影響度を時刻 k に格納
-        self.states[k] = new_state
-        self.strengths[k] = self.generate_random_strength()
+        # 新しい状態と影響度を保存
+        self.states[self.k] = new_state
+        self.strengths[self.k] = self.generate_random_strength()
 
 
 class ArticleNode(Node):
@@ -206,18 +201,20 @@ class Nodes:
                 # 親記事ノードをランダムに選択
                 parent_article_id = random.randint(0, self.article_num - 1)
                 parent_article_node = self.article_nodes[parent_article_id]
-                user_node.add_parent(k, parent_article_node)
-                parent_article_node.add_child(k, user_node)
+                user_node.add_parent(
+                    k, random.randint(0, self.k_max), parent_article_node
+                )
 
                 # 親ユーザーコメントノードの選択（存在しない場合もあり）
                 parent_user_ids = list(range(self.article_num, user_id))
                 parent_user_id = random.choice(parent_user_ids + [None])
                 if parent_user_id is not None:
                     parent_user_node = self.user_nodes[parent_user_id]
-                    user_node.add_parent(k, parent_user_node)
-                    parent_user_node.add_child(k, user_node)
+                    user_node.add_parent(
+                        k, random.randint(0, self.k_max - 1), parent_user_node
+                    )
 
-        # ノードを ID 順にソート（オプション）
+        # ノードを ID 順にソート
         self.user_nodes = dict(sorted(self.user_nodes.items(), key=lambda x: x[0]))
         self.article_nodes = dict(
             sorted(self.article_nodes.items(), key=lambda x: x[0])
@@ -227,194 +224,144 @@ class Nodes:
         """
         全ユーザーコメントノードの状態を各時刻にわたって更新するメソッド。
         """
-        # 時刻順に状態を更新
-        for k in range(1, self.k_max + 1):
-            # ID順でユーザーコメントノードを更新し、親が先に更新されるようにする
-            for user_id in sorted(self.user_nodes.keys()):
+        # ID順でユーザーコメントノードを更新し、親が先に更新されるようにする
+        for user_id in sorted(self.user_nodes.keys()):
+            # 時刻順に状態を更新
+            for k in range(1, self.k_max + 1):
                 user_node = self.user_nodes[user_id]
+                user_node.update_state()
 
-                # 時刻 k における親ノードが存在するかを確認
-                if k in user_node.parents:
-                    parent_nodes = user_node.parents[k]
+    def generate_training_data(
+        self,
+    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, float, float]]:
+        """
+        ノードの状態を学習用データに変換するメソッド。
+        自分の状態、親の状態・影響度から、重みとバイアスを学習するためのデータを生成する。
+        """
+        training_data = []
+        for user_id, user_node in self.user_nodes.items():
+            tmp = []
+            for k in range(1, self.k_max):
+                # 親ノードの状態と影響度を取得
+                parent_nodes = user_node.parents[k]
+                state_parent_article = np.zeros((self.state_dim, 1))
+                strength_article = 0
+                state_parent_comment = np.zeros((self.state_dim, 1))
+                strength_comment = 0
+                for k_parent, parent_node in parent_nodes:
+                    if isinstance(parent_node, ArticleNode):
+                        state_parent_article = parent_node.states[k_parent]
+                        strength_article = parent_node.strengths[k_parent]
+                    elif isinstance(parent_node, UserCommentNode):
+                        state_parent_comment = parent_node.states[k_parent]
+                        strength_comment = parent_node.strengths[k_parent]
 
-                    # 親ノードの状態と影響度を初期化
-                    state_parent_article = np.zeros((user_node.state_dim, 1))
-                    strength_article = 0
-                    state_parent_comment = np.zeros((user_node.state_dim, 1))
-                    strength_comment = 0
-
-                    # 親ノードから状態と影響度を取得
-                    for parent_node in parent_nodes:
-                        if isinstance(parent_node, ArticleNode):
-                            state_parent_article = parent_node.states[k - 1]
-                            strength_article = parent_node.strengths[k - 1]
-                        elif isinstance(parent_node, UserCommentNode):
-                            state_parent_comment = parent_node.states[k - 1]
-                            strength_comment = parent_node.strengths[k - 1]
-
-                    # 親の状態に基づいてユーザーコメントノードの状態を更新
-                    user_node.update_state(
-                        k,
+                # 学習用データに追加
+                tmp.append(
+                    (
+                        user_node.states[k + 1],
                         state_parent_article,
                         state_parent_comment,
+                        user_node.states[k],
                         strength_article,
                         strength_comment,
                     )
+                )
 
-    def save_to_db(self, db_config: dict = db_manager.DB_CONFIG) -> None:
+            # ユーザーごとの学習用データを追加
+            training_data.append((user_id, *zip(*tmp)))
+
+        return training_data
+
+    def save_training_data_to_json(self, file_path: Path) -> None:
         """
-        ノードの状態、親子関係、重み、バイアスをデータベースに保存するメソッド。
-
-        Parameters
-        ----------
-        db_config : dict, Optional
-            データベース接続設定を含む辞書
+        学習用データを JSON ファイルに保存するメソッド。
         """
-        # 記事ノードの保存（先にarticlesテーブルに追加）
-        for node in self.article_nodes.values():
-            query = f"""
-            INSERT INTO articles (article_id)
-            VALUES ({node.id})
-            ON CONFLICT (article_id) DO NOTHING;
-            """
-            db_manager.execute_query(query, db_config=db_config, commit=True)
+        training_data = self.generate_training_data()
+        training_data_json = {
+            "metadata": {
+                "article_num": self.article_num,
+                "user_num": self.user_num,
+                "state_dim": self.state_dim,
+                "k_max": self.k_max,
+            },
+            "data": [
+                {
+                    "user_id": user_id,
+                    "data": [
+                        {
+                            "state": state.tolist(),
+                            "state_parent_article": state_parent_article.tolist(),
+                            "state_parent_comment": state_parent_comment.tolist(),
+                            "state_previous": state_previous.tolist(),
+                            "strength_article": strength_article,
+                            "strength_comment": strength_comment,
+                        }
+                        for state, state_parent_article, state_parent_comment, state_previous, strength_article, strength_comment in zip(
+                            *data
+                        )
+                    ],
+                }
+                for user_id, *data in training_data
+            ],
+        }
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with file_path.open("w") as f:
+            json.dump(training_data_json, f, indent=4)
 
-        # コメントノードの保存（先にcommentsテーブルに追加）
-        for node in self.user_nodes.values():
-            query = f"""
-            INSERT INTO comments (comment_id)
-            VALUES ({node.id})
-            ON CONFLICT (comment_id) DO NOTHING;
-            """
-            db_manager.execute_query(query, db_config=db_config, commit=True)
+    def ndarray_to_ARRAY(self, ndarray: np.ndarray) -> str:
+        """
+        NumPy の ndarray を Postgres の ARRAY に変換するメソッド。多次元配列は多次元の ARRAY に変換する。
+        """
+        if len(ndarray.shape) == 1:
+            # 一次元配列の場合、PostgresのARRAY形式で返す
+            return f"ARRAY{ndarray.tolist()}"
+        else:
+            # 二次元以上の配列の場合、各行に対して再帰的にARRAY形式に変換し、リストにまとめる
+            return f"ARRAY[{', '.join(self.ndarray_to_ARRAY(row) for row in ndarray)}]"
 
-        # 状態情報の保存
-        for node in self.article_nodes.values():
-            for k, state in node.states.items():
+    def save_to_db(
+        self,
+        db_config: dict = {
+            "host": "postgresql_db",
+            "database": "test_db",
+            "user": "kjqw",
+            "password": "1122",
+            "port": "5432",
+        },
+    ):
+        """
+        ノードの情報をデータベースに保存するメソッド。
+        """
+        for article_nodes in self.article_nodes.values():
+            for k in range(self.k_max + 1):
                 query = f"""
-                INSERT INTO node_states (node_id, node_type, time_step, state, strength)
-                VALUES ({node.id}, 'article', {k}, ARRAY{state.tolist()}, {node.strengths[k]})
-                ON CONFLICT (node_id, node_type, time_step) DO UPDATE
-                SET state = EXCLUDED.state, strength = EXCLUDED.strength;
+                INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
+                VALUES ({article_nodes.id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {k}, {self.ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
                 """
-                db_manager.execute_query(query, db_config=db_config, commit=True)
+                db_manager.execute_query(query, db_config, commit=True)
 
-        for node in self.user_nodes.values():
-            for k, state in node.states.items():
+        for user_nodes in self.user_nodes.values():
+            for k in range(self.k_max + 1):
+                parent_ids = []
+                parent_ks = []
+                for k_parent, parent_node in user_nodes.parents[k]:
+                    parent_ids.append(parent_node.id)
+                    parent_ks.append(k_parent)
+                # 空の場合に型キャストを追加
+                parent_ids_sql = (
+                    f"ARRAY{parent_ids}::integer[]"
+                    if parent_ids
+                    else "ARRAY[]::integer[]"
+                )
+                parent_ks_sql = (
+                    f"ARRAY{parent_ks}::integer[]"
+                    if parent_ks
+                    else "ARRAY[]::integer[]"
+                )
+
                 query = f"""
-                INSERT INTO node_states (node_id, node_type, time_step, state, strength)
-                VALUES ({node.id}, 'comment', {k}, ARRAY{state.tolist()}, {node.strengths[k]})
-                ON CONFLICT (node_id, node_type, time_step) DO UPDATE
-                SET state = EXCLUDED.state, strength = EXCLUDED.strength;
+                INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
+                VALUES ({user_nodes.id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {k}, {self.ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {self.ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {self.ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {self.ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {self.ndarray_to_ARRAY(user_nodes.bias)});
                 """
-                db_manager.execute_query(query, db_config=db_config, commit=True)
-
-            # 重みの保存
-            for weight_type, weight_matrix in node.weights.items():
-                query = f"""
-                INSERT INTO weights (node_id, weight_type, weight_matrix)
-                VALUES ({node.id}, '{weight_type}', ARRAY{weight_matrix.tolist()})
-                ON CONFLICT (node_id, weight_type) DO UPDATE
-                SET weight_matrix = EXCLUDED.weight_matrix;
-                """
-                db_manager.execute_query(query, db_config=db_config, commit=True)
-
-            # バイアスの保存
-            query = f"""
-            INSERT INTO biases (node_id, bias_vector)
-            VALUES ({node.id}, ARRAY{node.bias.tolist()})
-            ON CONFLICT (node_id) DO UPDATE
-            SET bias_vector = EXCLUDED.bias_vector;
-            """
-            db_manager.execute_query(query, db_config=db_config, commit=True)
-
-        # 親子関係の保存
-        for user_id, user_node in self.user_nodes.items():
-            for k, parents in user_node.parents.items():
-                for parent_node in parents:
-                    parent_type = (
-                        "article" if isinstance(parent_node, ArticleNode) else "comment"
-                    )
-                    child_type = "comment"
-                    query = f"""
-                    INSERT INTO node_relations (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step)
-                    VALUES ({parent_node.id}, '{parent_type}', {user_node.id}, '{child_type}', {k})
-                    ON CONFLICT (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step) DO NOTHING;
-                    """
-                    db_manager.execute_query(query, db_config=db_config, commit=True)
-
-    def load_from_db(self, db_config: dict = db_manager.DB_CONFIG) -> None:
-        """
-        データベースからノードデータを読み込み、Nodesオブジェクトを再構築するメソッド。
-
-        Parameters
-        ----------
-        db_config : dict, Optional
-            データベース接続設定を含む辞書
-        """
-        # 記事ノードの読み込み
-        query = "SELECT article_id FROM articles"
-        article_data = db_manager.execute_query(query, db_config=db_config)
-
-        for row in article_data:
-            article_id = row[0]
-            article_node = ArticleNode(
-                id=article_id, state_dim=self.state_dim, k_max=self.k_max
-            )
-            self.article_nodes[article_id] = article_node
-
-        # コメントノードの読み込み
-        query = "SELECT comment_id FROM comments"
-        comment_data = db_manager.execute_query(query, db_config=db_config)
-
-        for row in comment_data:
-            comment_id = row[0]
-            comment_node = UserCommentNode(id=comment_id, state_dim=self.state_dim)
-            self.user_nodes[comment_id] = comment_node
-
-        # ノードの状態と影響度の読み込み
-        query = "SELECT node_id, node_type, time_step, state, strength FROM node_states"
-        state_data = db_manager.execute_query(query, db_config=db_config)
-
-        for row in state_data:
-            node_id, node_type, time_step, state, strength = row
-            state_array = np.array(state).reshape(-1, 1)
-            if node_type == "article":
-                self.article_nodes[node_id].states[time_step] = state_array
-                self.article_nodes[node_id].strengths[time_step] = strength
-            elif node_type == "comment":
-                self.user_nodes[node_id].states[time_step] = state_array
-                self.user_nodes[node_id].strengths[time_step] = strength
-
-        # 親子関係の読み込み
-        query = "SELECT parent_node_id, parent_node_type, child_node_id, time_step FROM node_relations"
-        relation_data = db_manager.execute_query(query, db_config=db_config)
-
-        for row in relation_data:
-            parent_id, parent_type, child_id, time_step = row
-            parent_node = (
-                self.article_nodes[parent_id]
-                if parent_type == "article"
-                else self.user_nodes[parent_id]
-            )
-            child_node = self.user_nodes[child_id]
-            child_node.add_parent(time_step, parent_node)
-            parent_node.add_child(time_step, child_node)
-
-        # 重み行列の読み込み
-        query = "SELECT node_id, weight_type, weight_matrix FROM weights"
-        weight_data = db_manager.execute_query(query, db_config=db_config)
-
-        for row in weight_data:
-            node_id, weight_type, weight_matrix = row
-            weight_array = np.array(weight_matrix)
-            self.user_nodes[node_id].weights[weight_type] = weight_array
-
-        # バイアスベクトルの読み込み
-        query = "SELECT node_id, bias_vector FROM biases"
-        bias_data = db_manager.execute_query(query, db_config=db_config)
-
-        for row in bias_data:
-            node_id, bias_vector = row
-            bias_array = np.array(bias_vector).reshape(-1, 1)
-            self.user_nodes[node_id].bias = bias_array
+                db_manager.execute_query(query, db_config, commit=True)
