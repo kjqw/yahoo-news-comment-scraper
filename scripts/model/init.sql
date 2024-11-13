@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS nodes (
 );
 
 CREATE TABLE IF NOT EXISTS params (
-    user_id INT PRIMARY KEY REFERENCES nodes (node_id), -- ユーザーID
+    node_id INT PRIMARY KEY REFERENCES nodes (node_id), -- ユーザーID
     metadata_id INTEGER NOT NULL REFERENCES metadata (id), -- メタデータID
     w_p_true FLOAT[] [], -- 真の重み行列
     w_q_true FLOAT[] [], -- 真の重み行列

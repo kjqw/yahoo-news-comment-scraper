@@ -336,11 +336,28 @@ class Nodes:
         """
         ノードの情報をデータベースに保存するメソッド。
         """
+        # メタデータを保存
+        query = f"""
+        INSERT INTO metadata (article_num, user_num, state_dim, k_max)
+        VALUES ({self.article_num}, {self.user_num}, {self.state_dim}, {self.k_max});
+        """
+        execute_query(query, db_config, commit=True)
+        # メタデータのIDを取得
+        metadata_id = execute_query(
+            """
+            SELECT metadata_id
+            FROM metadata
+            ORDER BY metadata_id DESC
+            LIMIT 1;
+            """,
+            db_config,
+        )[0][0]
+
         for article_nodes in self.article_nodes.values():
             for k in range(self.k_max + 1):
                 query = f"""
-                INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
-                VALUES ({article_nodes.id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {k}, {ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
+                INSERT INTO nodes (node_id, k, metadata_id, node_type, parent_ids, parent_ks, state_dim, k_max, state, strength, W_p, W_q, W_s, b)
+                VALUES ({article_nodes.id},  {k}, {metadata_id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
                 """
                 execute_query(query, db_config, commit=True)
 
@@ -364,8 +381,8 @@ class Nodes:
                 )
 
                 query = f"""
-                INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
-                VALUES ({user_nodes.id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {k}, {ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {ndarray_to_ARRAY(user_nodes.bias)});
+                INSERT INTO nodes (node_id, k, metadata_id, node_type, parent_ids, parent_ks, state_dim, k_max, state, strength, W_p, W_q, W_s, b)
+                VALUES ({user_nodes.id}, {k}, {metadata_id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {ndarray_to_ARRAY(user_nodes.bias)});
                 """
                 execute_query(query, db_config, commit=True)
 
@@ -388,7 +405,7 @@ def get_params(user_id: int, db_config: dict) -> dict:
     """
     data = execute_query(
         f"""
-        SELECT * FROM params WHERE user_id = {user_id};
+        SELECT * FROM params WHERE node_id = {user_id};
         """,
         db_config,
     )

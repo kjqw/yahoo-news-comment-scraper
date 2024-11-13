@@ -283,7 +283,7 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
 
     # パラメータをデータベースに保存
     query = f"""
-    INSERT INTO params (user_id, w_p_est, w_q_est, w_s_est, b_est)
+    INSERT INTO params (node_id, w_p_est, w_q_est, w_s_est, b_est)
     VALUES ({user_id}, {W_p_str}, {W_q_str}, {W_s_str}, {b_str})
     """
 
@@ -300,7 +300,7 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
         w_s_true = nodes.w_s,
         b_true = nodes.b
     FROM nodes
-    WHERE params.user_id = nodes.node_id
+    WHERE params.node_id = nodes.node_id
     AND nodes.node_id = {user_id}
     """
     db_manager.execute_query(
