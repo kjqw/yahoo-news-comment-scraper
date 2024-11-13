@@ -9,7 +9,7 @@ import numpy as np
 
 sys.path.append(str(Path(__file__).parents[1]))
 
-import db_manager
+from db_manager import execute_query
 
 # パラメータ設定
 INITIAL_STATE_MIN, INITIAL_STATE_MAX = -1, 1  # 初期状態値の範囲
@@ -328,7 +328,7 @@ class Nodes:
                 INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
                 VALUES ({article_nodes.id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {k}, {ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
                 """
-                db_manager.execute_query(query, db_config, commit=True)
+                execute_query(query, db_config, commit=True)
 
         for user_nodes in self.user_nodes.values():
             for k in range(self.k_max + 1):
@@ -353,7 +353,7 @@ class Nodes:
                 INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
                 VALUES ({user_nodes.id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {k}, {ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {ndarray_to_ARRAY(user_nodes.bias)});
                 """
-                db_manager.execute_query(query, db_config, commit=True)
+                execute_query(query, db_config, commit=True)
 
 
 def ndarray_to_ARRAY(ndarray: np.ndarray) -> str:
@@ -369,13 +369,13 @@ def ndarray_to_ARRAY(ndarray: np.ndarray) -> str:
 
 
 def get_params(user_id: int, db_config: dict) -> dict:
-    data = db_manager.execute_query(
+    data = execute_query(
         f"""
         SELECT * FROM params WHERE user_id = {user_id};
         """,
         db_config,
     )
-    columns = db_manager.execute_query(
+    columns = execute_query(
         """
         SELECT column_name
         FROM information_schema.columns
