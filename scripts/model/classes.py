@@ -133,7 +133,7 @@ class UserCommentNode(Node):
                 strength_comment = parent_node.strengths[k_parent]
 
         # 状態更新式に基づき新しい状態を計算
-        new_state = (
+        new_state = np.tanh(
             self.weights["W_p"] @ state_parent_article * strength_article
             + self.weights["W_q"] @ state_parent_comment * strength_comment
             + self.weights["W_s"] @ previous_state

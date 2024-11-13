@@ -198,7 +198,7 @@ def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
         previous_state,
     ) in data[user_id]:
         # 予測状態を計算
-        pred_state = (
+        pred_state = np.tanh(
             W_p @ parent_article_state * parent_article_strength
             + W_q @ parent_comment_state * parent_comment_strength
             + W_s @ previous_state
@@ -277,5 +277,17 @@ W_p_est, W_q_est, W_s_est, b_est = _reshape_params(params)
 # 最適化されたパラメータを表示
 print(f"{W_p_est=}")
 print(np.array(df_data[df_data["node_id"] == user_id]["w_p"].values[0]))
+
+# %%
+print(f"{W_q_est=}")
+print(np.array(df_data[df_data["node_id"] == user_id]["w_q"].values[0]))
+
+# %%
+print(f"{W_s_est=}")
+print(np.array(df_data[df_data["node_id"] == user_id]["w_s"].values[0]))
+
+# %%
+print(f"{b_est=}")
+print(np.array(df_data[df_data["node_id"] == user_id]["b"].values[0]))
 
 # %%
