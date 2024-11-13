@@ -2,7 +2,9 @@
 import sys
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import utils
 
 sys.path.append(str(Path(__file__).parents[1]))
@@ -63,7 +65,7 @@ weights
 # %%
 true_states = {
     i: [
-        np.array(j)
+        np.array(j[0])
         for j in execute_query(
             f"""
         SELECT state
@@ -86,7 +88,7 @@ for user_id in range(article_num, article_num + user_num):
     W_q = weights[user_id - article_num]["w_q_est"]
     W_s = weights[user_id - article_num]["w_s_est"]
     b = weights[user_id - article_num]["b_est"]
-    for k in range(1, k_max):
+    for k in range(1, k_max + 1):
         parent_states = utils.get_parent_state_and_strength(user_id, k, db_config)
         if len(parent_states) == 1:
             state_parent_article, strength_parent_article, _ = parent_states[0]
@@ -118,5 +120,63 @@ for user_id in range(article_num, article_num + user_num):
 # %%
 for true_state, pred_state in zip(true_states[5], pred_states[5]):
     print(np.hstack([true_state[0], pred_state[0]]))
+
+# %%
+true_states[5]
+# %%
+true_states_plot_data = np.concatenate([i for i in true_states[5]], axis=1)
+pred_states_plot_data = np.concatenate([i for i in pred_states[5]], axis=1)
+# %%
+# プロット設定
+sns.set(style="darkgrid")
+fig, axes = plt.subplots(state_dim, 1, figsize=(10, state_dim * 2.5), sharex=True)
+
+# 各次元ごとにプロット
+for dim, (true_state, pred_state) in enumerate(
+    zip(true_states_plot_data, pred_states_plot_data)
+):
+    # Trueの散布図と折れ線
+    sns.scatterplot(
+        x=range(k_max + 1),
+        y=true_state,
+        label="True",
+        marker="o",
+        color="blue",
+        ax=axes[dim],
+        legend=False if dim < state_dim - 1 else True,  # 最後のaxのみlegend表示
+    )
+    sns.lineplot(
+        x=range(k_max + 1),
+        y=true_state,
+        label="True",
+        color="blue",
+        ax=axes[dim],
+        legend=False if dim < state_dim - 1 else True,
+    )
+    # Predの散布図と折れ線
+    sns.scatterplot(
+        x=range(k_max + 1),
+        y=pred_state,
+        label="Pred",
+        marker="x",
+        color="red",
+        ax=axes[dim],
+        legend=False if dim < state_dim - 1 else True,
+    )
+    sns.lineplot(
+        x=range(k_max + 1),
+        y=pred_state,
+        label="Pred",
+        color="red",
+        linestyle="--",
+        ax=axes[dim],
+        legend=False if dim < state_dim - 1 else True,
+    )
+
+    axes[dim].set_title(f"Dimension {dim + 1}")
+
+# レイアウト調整
+plt.tight_layout()
+plt.show()
 
 # %%
