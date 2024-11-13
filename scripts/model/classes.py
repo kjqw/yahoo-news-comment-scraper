@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import random
 import sys
 from pathlib import Path
@@ -230,160 +231,60 @@ class Nodes:
                 user_node = self.user_nodes[user_id]
                 user_node.update_state()
 
-    # def save_to_db(self, db_config: dict = db_manager.DB_CONFIG) -> None:
-    #     """
-    #     ノードの状態、親子関係、重み、バイアスをデータベースに保存するメソッド。
+    def generate_training_data(
+        self,
+    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, float, float]]:
+        """
+        ノードの状態を学習用データに変換するメソッド。
+        自分の状態、親の状態・影響度から、重みとバイアスを学習するためのデータを生成する。
+        """
+        training_data = []
+        for user_id, user_node in self.user_nodes.items():
+            for k in range(1, self.k_max + 1):
+                # 親ノードの状態と影響度を取得
+                parent_nodes = user_node.parents[k]
+                state_parent_article = np.zeros((self.state_dim, 1))
+                strength_article = 0
+                state_parent_comment = np.zeros((self.state_dim, 1))
+                strength_comment = 0
+                for k_parent, parent_node in parent_nodes:
+                    if isinstance(parent_node, ArticleNode):
+                        state_parent_article = parent_node.states[k_parent]
+                        strength_article = parent_node.strengths[k_parent]
+                    elif isinstance(parent_node, UserCommentNode):
+                        state_parent_comment = parent_node.states[k_parent]
+                        strength_comment = parent_node.strengths[k_parent]
 
-    #     Parameters
-    #     ----------
-    #     db_config : dict, Optional
-    #         データベース接続設定を含む辞書
-    #     """
-    #     # 記事ノードの保存（先にarticlesテーブルに追加）
-    #     for node in self.article_nodes.values():
-    #         query = f"""
-    #         INSERT INTO articles (article_id)
-    #         VALUES ({node.id})
-    #         ON CONFLICT (article_id) DO NOTHING;
-    #         """
-    #         db_manager.execute_query(query, db_config=db_config, commit=True)
+                # 学習データを生成
+                training_data.append(
+                    (
+                        state_parent_article,
+                        state_parent_comment,
+                        user_node.states[k - 1],
+                        strength_article,
+                        strength_comment,
+                    )
+                )
 
-    #     # コメントノードの保存（先にcommentsテーブルに追加）
-    #     for node in self.user_nodes.values():
-    #         query = f"""
-    #         INSERT INTO comments (comment_id)
-    #         VALUES ({node.id})
-    #         ON CONFLICT (comment_id) DO NOTHING;
-    #         """
-    #         db_manager.execute_query(query, db_config=db_config, commit=True)
+        return training_data
 
-    #     # 状態情報の保存
-    #     for node in self.article_nodes.values():
-    #         for k, state in node.states.items():
-    #             query = f"""
-    #             INSERT INTO node_states (node_id, node_type, time_step, state, strength)
-    #             VALUES ({node.id}, 'article', {k}, ARRAY{state.tolist()}, {node.strengths[k]})
-    #             ON CONFLICT (node_id, node_type, time_step) DO UPDATE
-    #             SET state = EXCLUDED.state, strength = EXCLUDED.strength;
-    #             """
-    #             db_manager.execute_query(query, db_config=db_config, commit=True)
-
-    #     for node in self.user_nodes.values():
-    #         for k, state in node.states.items():
-    #             query = f"""
-    #             INSERT INTO node_states (node_id, node_type, time_step, state, strength)
-    #             VALUES ({node.id}, 'comment', {k}, ARRAY{state.tolist()}, {node.strengths[k]})
-    #             ON CONFLICT (node_id, node_type, time_step) DO UPDATE
-    #             SET state = EXCLUDED.state, strength = EXCLUDED.strength;
-    #             """
-    #             db_manager.execute_query(query, db_config=db_config, commit=True)
-
-    #         # 重みの保存
-    #         for weight_type, weight_matrix in node.weights.items():
-    #             query = f"""
-    #             INSERT INTO weights (node_id, weight_type, weight_matrix)
-    #             VALUES ({node.id}, '{weight_type}', ARRAY{weight_matrix.tolist()})
-    #             ON CONFLICT (node_id, weight_type) DO UPDATE
-    #             SET weight_matrix = EXCLUDED.weight_matrix;
-    #             """
-    #             db_manager.execute_query(query, db_config=db_config, commit=True)
-
-    #         # バイアスの保存
-    #         query = f"""
-    #         INSERT INTO biases (node_id, bias_vector)
-    #         VALUES ({node.id}, ARRAY{node.bias.tolist()})
-    #         ON CONFLICT (node_id) DO UPDATE
-    #         SET bias_vector = EXCLUDED.bias_vector;
-    #         """
-    #         db_manager.execute_query(query, db_config=db_config, commit=True)
-
-    #     # 親子関係の保存
-    #     for user_id, user_node in self.user_nodes.items():
-    #         for k, parents in user_node.parents.items():
-    #             for parent_node in parents:
-    #                 parent_type = (
-    #                     "article" if isinstance(parent_node, ArticleNode) else "comment"
-    #                 )
-    #                 child_type = "comment"
-    #                 query = f"""
-    #                 INSERT INTO node_relations (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step)
-    #                 VALUES ({parent_node.id}, '{parent_type}', {user_node.id}, '{child_type}', {k})
-    #                 ON CONFLICT (parent_node_id, parent_node_type, child_node_id, child_node_type, time_step) DO NOTHING;
-    #                 """
-    #                 db_manager.execute_query(query, db_config=db_config, commit=True)
-
-    # def load_from_db(self, db_config: dict = db_manager.DB_CONFIG) -> None:
-    #     """
-    #     データベースからノードデータを読み込み、Nodesオブジェクトを再構築するメソッド。
-
-    #     Parameters
-    #     ----------
-    #     db_config : dict, Optional
-    #         データベース接続設定を含む辞書
-    #     """
-    #     # 記事ノードの読み込み
-    #     query = "SELECT article_id FROM articles"
-    #     article_data = db_manager.execute_query(query, db_config=db_config)
-
-    #     for row in article_data:
-    #         article_id = row[0]
-    #         article_node = ArticleNode(
-    #             id=article_id, state_dim=self.state_dim, k_max=self.k_max
-    #         )
-    #         self.article_nodes[article_id] = article_node
-
-    #     # コメントノードの読み込み
-    #     query = "SELECT comment_id FROM comments"
-    #     comment_data = db_manager.execute_query(query, db_config=db_config)
-
-    #     for row in comment_data:
-    #         comment_id = row[0]
-    #         comment_node = UserCommentNode(id=comment_id, state_dim=self.state_dim)
-    #         self.user_nodes[comment_id] = comment_node
-
-    #     # ノードの状態と影響度の読み込み
-    #     query = "SELECT node_id, node_type, time_step, state, strength FROM node_states"
-    #     state_data = db_manager.execute_query(query, db_config=db_config)
-
-    #     for row in state_data:
-    #         node_id, node_type, time_step, state, strength = row
-    #         state_array = np.array(state).reshape(-1, 1)
-    #         if node_type == "article":
-    #             self.article_nodes[node_id].states[time_step] = state_array
-    #             self.article_nodes[node_id].strengths[time_step] = strength
-    #         elif node_type == "comment":
-    #             self.user_nodes[node_id].states[time_step] = state_array
-    #             self.user_nodes[node_id].strengths[time_step] = strength
-
-    #     # 親子関係の読み込み
-    #     query = "SELECT parent_node_id, parent_node_type, child_node_id, time_step FROM node_relations"
-    #     relation_data = db_manager.execute_query(query, db_config=db_config)
-
-    #     for row in relation_data:
-    #         parent_id, parent_type, child_id, time_step = row
-    #         parent_node = (
-    #             self.article_nodes[parent_id]
-    #             if parent_type == "article"
-    #             else self.user_nodes[parent_id]
-    #         )
-    #         child_node = self.user_nodes[child_id]
-    #         child_node.add_parent(time_step, parent_node)
-    #         parent_node.add_child(time_step, child_node)
-
-    #     # 重み行列の読み込み
-    #     query = "SELECT node_id, weight_type, weight_matrix FROM weights"
-    #     weight_data = db_manager.execute_query(query, db_config=db_config)
-
-    #     for row in weight_data:
-    #         node_id, weight_type, weight_matrix = row
-    #         weight_array = np.array(weight_matrix)
-    #         self.user_nodes[node_id].weights[weight_type] = weight_array
-
-    #     # バイアスベクトルの読み込み
-    #     query = "SELECT node_id, bias_vector FROM biases"
-    #     bias_data = db_manager.execute_query(query, db_config=db_config)
-
-    #     for row in bias_data:
-    #         node_id, bias_vector = row
-    #         bias_array = np.array(bias_vector).reshape(-1, 1)
-    #         self.user_nodes[node_id].bias = bias_array
+    def save_training_data_to_json(self, file_path: Path) -> None:
+        """
+        学習用データを JSON ファイルに保存するメソッド。
+        """
+        training_data = self.generate_training_data()
+        training_data_json = {
+            "data": [
+                {
+                    "state_parent_article": state_parent_article.tolist(),
+                    "state_parent_comment": state_parent_comment.tolist(),
+                    "state_user_comment": state_user_comment.tolist(),
+                    "strength_article": strength_article,
+                    "strength_comment": strength_comment,
+                }
+                for state_parent_article, state_parent_comment, state_user_comment, strength_article, strength_comment in training_data
+            ]
+        }
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with file_path.open("w") as f:
+            json.dump(training_data_json, f, indent=4)
