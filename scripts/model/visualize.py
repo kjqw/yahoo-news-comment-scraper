@@ -32,6 +32,7 @@ metadata_id = execute_query(
     """,
     db_config,
 )[0][0]
+
 article_num, user_num, state_dim, k_max = execute_query(
     f"""
     SELECT article_num, user_num, state_dim, k_max
@@ -46,7 +47,8 @@ article_num, user_num, state_dim, k_max
 
 # %%
 weights = [
-    utils.get_params(i, db_config) for i in range(article_num, article_num + user_num)
+    utils.get_params(i, metadata_id, db_config)
+    for i in range(article_num, article_num + user_num)
 ]
 # %%
 weights
@@ -78,7 +80,9 @@ for user_id in range(article_num, article_num + user_num):
     W_s = weights[user_id - article_num]["w_s_est"]
     b = weights[user_id - article_num]["b_est"]
     for k in range(1, k_max + 1):
-        parent_states = utils.get_parent_state_and_strength(user_id, k, db_config)
+        parent_states = utils.get_parent_state_and_strength(
+            user_id, k, metadata_id, db_config
+        )
         if len(parent_states) == 1:
             state_parent_article, strength_parent_article, _ = parent_states[0]
             state_parent_comment, strength_parent_comment = (
@@ -107,14 +111,14 @@ for user_id in range(article_num, article_num + user_num):
         )
 
 # %%
-for true_state, pred_state in zip(true_states[5], pred_states[5]):
+for true_state, pred_state in zip(true_states[article_num], pred_states[article_num]):
     print(np.hstack([true_state[0], pred_state[0]]))
 
 # %%
-true_states[5]
+true_states[article_num]
 # %%
-true_states_plot_data = np.concatenate([i for i in true_states[5]], axis=1)
-pred_states_plot_data = np.concatenate([i for i in pred_states[5]], axis=1)
+true_states_plot_data = np.concatenate([i for i in true_states[article_num]], axis=1)
+pred_states_plot_data = np.concatenate([i for i in pred_states[article_num]], axis=1)
 # %%
 # プロット設定
 sns.set(style="darkgrid")
