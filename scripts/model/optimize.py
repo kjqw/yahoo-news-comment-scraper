@@ -227,7 +227,7 @@ def _reshape_params(
     W_p = params[: state_dim**2].reshape(state_dim, state_dim)
     W_q = params[state_dim**2 : 2 * state_dim**2].reshape(state_dim, state_dim)
     W_s = params[2 * state_dim**2 : 3 * state_dim**2].reshape(state_dim, state_dim)
-    b = params[3 * state_dim**2 : 3 * state_dim**2 + state_dim]
+    b = params[3 * state_dim**2 : 3 * state_dim**2 + state_dim].reshape(state_dim, 1)
     return W_p, W_q, W_s, b
 
 
