@@ -10,7 +10,7 @@ psql -h postgresql_db -U kjqw -d postgres -c "CREATE DATABASE test_db;"
 import sys
 from pathlib import Path
 
-import classes
+import utils
 
 sys.path.append(str(Path(__file__).parents[1]))
 
@@ -34,7 +34,7 @@ init_sql_path = (
 
 # %%
 # ノードのインスタンスを生成。ランダムに初期値や重み行列が設定される
-nodes = classes.Nodes(article_num, user_num, state_dim, k_max)
+nodes = utils.Nodes(article_num, user_num, state_dim, k_max)
 # ノードの親子関係をランダムに生成
 nodes.generate_random_nodes(state_dim)
 # 状態ベクトルを更新

@@ -309,17 +309,6 @@ class Nodes:
         with file_path.open("w") as f:
             json.dump(training_data_json, f, indent=4)
 
-    def ndarray_to_ARRAY(self, ndarray: np.ndarray) -> str:
-        """
-        NumPy の ndarray を Postgres の ARRAY に変換するメソッド。多次元配列は多次元の ARRAY に変換する。
-        """
-        if len(ndarray.shape) == 1:
-            # 一次元配列の場合、PostgresのARRAY形式で返す
-            return f"ARRAY{ndarray.tolist()}"
-        else:
-            # 二次元以上の配列の場合、各行に対して再帰的にARRAY形式に変換し、リストにまとめる
-            return f"ARRAY[{', '.join(self.ndarray_to_ARRAY(row) for row in ndarray)}]"
-
     def save_to_db(
         self,
         db_config: dict = {
@@ -337,7 +326,7 @@ class Nodes:
             for k in range(self.k_max + 1):
                 query = f"""
                 INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
-                VALUES ({article_nodes.id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {k}, {self.ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
+                VALUES ({article_nodes.id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {k}, {ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
                 """
                 db_manager.execute_query(query, db_config, commit=True)
 
@@ -362,6 +351,18 @@ class Nodes:
 
                 query = f"""
                 INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
-                VALUES ({user_nodes.id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {k}, {self.ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {self.ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {self.ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {self.ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {self.ndarray_to_ARRAY(user_nodes.bias)});
+                VALUES ({user_nodes.id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {k}, {ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {ndarray_to_ARRAY(user_nodes.bias)});
                 """
                 db_manager.execute_query(query, db_config, commit=True)
+
+
+def ndarray_to_ARRAY(ndarray: np.ndarray) -> str:
+    """
+    NumPy の ndarray を Postgres の ARRAY に変換するメソッド。多次元配列は多次元の ARRAY に変換する。
+    """
+    if len(ndarray.shape) == 1:
+        # 一次元配列の場合、PostgresのARRAY形式で返す
+        return f"ARRAY{ndarray.tolist()}"
+    else:
+        # 二次元以上の配列の場合、各行に対して再帰的にARRAY形式に変換し、リストにまとめる
+        return f"ARRAY[{', '.join(ndarray_to_ARRAY(row) for row in ndarray)}]"
