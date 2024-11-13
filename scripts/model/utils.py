@@ -385,3 +385,47 @@ def get_params(user_id: int, db_config: dict) -> dict:
         db_config,
     )
     return {column[0]: np.array(data[0][i]) for i, column in enumerate(columns)}
+
+
+def get_parent_state_and_strength(node_id, k, db_config):
+    parent_ids = execute_query(
+        f"""
+        SELECT parent_ids
+        FROM nodes
+        WHERE node_id = {node_id} AND k = {k}
+        """,
+        db_config,
+    )[0][0]
+    parent_ks = execute_query(
+        f"""
+        SELECT parent_ks
+        FROM nodes
+        WHERE node_id = {node_id} AND k = {k}
+        """,
+        db_config,
+    )[0][0]
+    parent_states = [
+        execute_query(
+            f"""
+            SELECT state, strength, node_type
+            FROM nodes
+            WHERE node_id = {parent_id}
+            AND k = {parent_k}
+            """,
+            db_config,
+        )
+        for parent_id, parent_k in zip(parent_ids, parent_ks)
+    ]
+    state_dim = execute_query(
+        f"""
+        SELECT state_dim
+        FROM nodes
+        WHERE node_id = {parent_ids[0]} AND k = 0
+        """,
+        db_config,
+    )[0][0]
+
+    return [
+        (np.array(i[0][0]).reshape(state_dim, 1), np.array(i[0][1]), i[0][2])
+        for i in parent_states
+    ]
