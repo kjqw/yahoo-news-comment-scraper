@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS articles (
 
 CREATE TABLE IF NOT EXISTS comments (
     comment_id SERIAL PRIMARY KEY,
-    article_id INTEGER REFERENCES articles (article_id) ON DELETE CASCADE,
-    parent_comment_id INTEGER REFERENCES comments (comment_id) ON DELETE CASCADE,
+    article_id INTEGER REFERENCES articles (article_id),
+    parent_comment_id INTEGER REFERENCES comments (comment_id),
     username TEXT,
     user_link TEXT,
     posted_time TEXT,
