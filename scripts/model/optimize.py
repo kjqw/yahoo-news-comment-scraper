@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import utils
 from scipy.optimize import minimize
 
 sys.path.append(str(Path(__file__).parents[1]))
@@ -152,10 +153,6 @@ def _get_parent_state_strength(df, node_id, k) -> tuple[np.ndarray, float]:
 training_data = generate_training_data(df_data)
 
 # %%
-# 特定ユーザーの訓練データの一部を表示
-training_data[4][0]
-
-# %%
 # 記事数、ユーザー数、状態の次元、および最大k値を取得
 article_num = df_data[df_data["node_type"] == "article"]["node_id"].nunique()
 user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
@@ -264,30 +261,101 @@ def optimize_params(data: dict, user_id: int, epochs: int = 5) -> np.ndarray:
     return initial_params
 
 
+def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
+    """
+    パラメータをデータベースに保存する関数。
+
+    Parameters
+    ----------
+    params : np.ndarray
+        パラメータ。
+    user_id : int
+        ユーザーID。
+    db_config : dict
+        データベースの接続設定。
+    """
+    # パラメータをリシェイプ
+    W_p, W_q, W_s, b = _reshape_params(params)
+    W_p_str = utils.ndarray_to_ARRAY(W_p)
+    W_q_str = utils.ndarray_to_ARRAY(W_q)
+    W_s_str = utils.ndarray_to_ARRAY(W_s)
+    b_str = utils.ndarray_to_ARRAY(b)
+
+    # パラメータをデータベースに保存
+    query = """
+    CREATE TABLE IF NOT EXISTS params (
+        user_id INT PRIMARY KEY,
+        w_p_true FLOAT[][],
+        w_q_true FLOAT[][],
+        w_s_true FLOAT[][],
+        b_true FLOAT[],
+        w_p_est FLOAT[][],
+        w_q_est FLOAT[][],
+        w_s_est FLOAT[][],
+        b_est FLOAT[]
+    );
+    """
+    db_manager.execute_query(
+        query,
+        db_config,
+        commit=True,
+    )
+
+    query = f"""
+    INSERT INTO params (user_id, w_p_est, w_q_est, w_s_est, b_est)
+    VALUES ({user_id}, {W_p_str}, {W_q_str}, {W_s_str}, {b_str})
+    """
+
+    db_manager.execute_query(
+        query,
+        db_config,
+        commit=True,
+    )
+
+    query = f"""
+    UPDATE params
+    SET w_p_true = nodes.w_p,
+        w_q_true = nodes.w_q,
+        w_s_true = nodes.w_s,
+        b_true = nodes.b
+    FROM nodes
+    WHERE params.user_id = nodes.node_id
+    AND nodes.node_id = {user_id}
+    """
+    db_manager.execute_query(
+        query,
+        db_config,
+        commit=True,
+    )
+
+
 # %%
 # 最適化の対象とするユーザーIDを指定し、最適化を実行
-user_id = 4
-params = optimize_params(training_data, user_id)
+for user_id in range(article_num, article_num + user_num):
+    params = optimize_params(training_data, user_id)
+    save_params(params, user_id, db_config)
+
 
 # %%
-# 最適化されたパラメータを取得し、リシェイプ
-W_p_est, W_q_est, W_s_est, b_est = _reshape_params(params)
+def get_params(user_id: int, db_config: dict) -> dict:
+    data = db_manager.execute_query(
+        f"""
+        SELECT * FROM params WHERE user_id = {user_id};
+        """,
+        db_config,
+    )
+    columns = db_manager.execute_query(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'params'
+        ORDER BY ordinal_position;
+        """,
+        db_config,
+    )
+    return {column[0]: np.array(data[0][i]) for i, column in enumerate(columns)}
+
 
 # %%
-# 最適化されたパラメータを表示
-print(f"{W_p_est=}")
-print(np.array(df_data[df_data["node_id"] == user_id]["w_p"].values[0]))
-
-# %%
-print(f"{W_q_est=}")
-print(np.array(df_data[df_data["node_id"] == user_id]["w_q"].values[0]))
-
-# %%
-print(f"{W_s_est=}")
-print(np.array(df_data[df_data["node_id"] == user_id]["w_s"].values[0]))
-
-# %%
-print(f"{b_est=}")
-print(np.array(df_data[df_data["node_id"] == user_id]["b"].values[0]))
-
+get_params(article_num, db_config)
 # %%
