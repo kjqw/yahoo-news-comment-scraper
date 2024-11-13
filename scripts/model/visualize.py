@@ -22,38 +22,27 @@ db_config = {
 }
 
 # %%
-article_num = execute_query(
+# metadata_id = 2
+metadata_id = execute_query(
     """
-    SELECT COUNT(DISTINCT node_id) AS article_num
-    FROM nodes
-    WHERE node_type = 'article';
-    """,
-    db_config,
-)[0][0]
-user_num = execute_query(
-    """
-    SELECT COUNT(DISTINCT node_id) AS user_num
-    FROM nodes
-    WHERE node_type = 'user';
-    """,
-    db_config,
-)[0][0]
-state_dim = execute_query(
-    """
-    SELECT state_dim
-    FROM nodes
+    SELECT metadata_id
+    FROM metadata
+    ORDER BY metadata_id DESC
     LIMIT 1
     """,
     db_config,
 )[0][0]
-k_max = execute_query(
-    """
-    SELECT k_max
-    FROM nodes
-    LIMIT 1
+article_num, user_num, state_dim, k_max = execute_query(
+    f"""
+    SELECT article_num, user_num, state_dim, k_max
+    FROM metadata
+    WHERE metadata_id = {metadata_id}
     """,
     db_config,
-)[0][0]
+)[0]
+# %%
+article_num, user_num, state_dim, k_max
+
 
 # %%
 weights = [
@@ -70,7 +59,7 @@ true_states = {
             f"""
         SELECT state
         FROM nodes
-        WHERE node_type = 'user' AND node_id = {i}
+        WHERE node_type = 'user' AND node_id = {i} AND metadata_id = {metadata_id}
         """,
             db_config,
         )
@@ -179,4 +168,9 @@ for dim, (true_state, pred_state) in enumerate(
 plt.tight_layout()
 plt.show()
 
+# %%
+# 保存
+fig_path = Path(__file__).parent / f"data/figs/sample_{metadata_id}.png"
+fig_path.parent.mkdir(exist_ok=True, parents=True)
+fig.savefig(fig_path)
 # %%
