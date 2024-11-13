@@ -176,9 +176,6 @@ def get_article_comments(
     """
 
     try:
-        # スクレイピングの結果を格納する辞書を初期化
-        data = defaultdict(str)
-
         xpaths_general_comments = {
             "username": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
             "user_link": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
@@ -205,25 +202,30 @@ def get_article_comments(
         # 記事のコメントページを開く
         driver.get(url)
 
-        # コメント数を取得
-        total_comment_count_with_reply, total_comment_count_without_reply = (
-            get_total_comment_count(driver)
-        )
+        # # コメント数を取得
+        # total_comment_count_with_reply, total_comment_count_without_reply = (
+        #     get_total_comment_count(driver)
+        # )
+        # total_comment_count_with_reply = functions.normalize_number(
+        #     total_comment_count_with_reply
+        # )
+        # total_comment_count_without_reply = functions.normalize_number(
+        #     total_comment_count_without_reply
+        # )
 
-        db_manager.execute_query(
-            f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
-            DB_CONFIG,
-            commit=True,
-        )
-        db_manager.execute_query(
-            f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
-            DB_CONFIG,
-            commit=True,
-        )
+        # db_manager.execute_query(
+        #     f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
+        #     DB_CONFIG,
+        #     commit=True,
+        # )
+        # db_manager.execute_query(
+        #     f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
+        #     DB_CONFIG,
+        #     commit=True,
+        # )
 
         # 最大数に達するまでコメントを取得
         page = 1
-        data["comments"] = []
         while (page - 1) * 10 < max_comments:
             # 一般コメントのセクションを取得
             general_comment_sections = driver.find_elements(
@@ -241,6 +243,7 @@ def get_article_comments(
                 general_comment.get_info(
                     general_comment_section, xpaths_general_comments
                 )
+                general_comment.normalize_number()
 
                 general_comment.article_id = article_id
                 general_comment.comment_id = db_manager.execute_query(
@@ -266,6 +269,7 @@ def get_article_comments(
                         reply_comment.get_info(
                             reply_comment_section, xpaths_reply_comments
                         )
+                        reply_comment.normalize_number()
 
                         reply_comment.parent_comment_id = general_comment.comment_id
                         reply_comment.article_id = article_id
@@ -298,15 +302,31 @@ if __name__ == "__main__":
     }
 
     # 記事のリンクを取得
+    # article_links = db_manager.execute_query(
+    #     "SELECT article_id, article_link FROM articles"
+    # )
     article_links = db_manager.execute_query(
-        "SELECT article_id, article_link FROM articles"
+        """
+        SELECT article_id, article_link, ranking
+        FROM (
+            SELECT article_id, article_link, ranking,
+                ROW_NUMBER() OVER (PARTITION BY article_link ORDER BY ranking) AS rn
+            FROM articles
+        ) AS ranked_articles
+        WHERE rn = 1
+        ORDER BY ranking ASC
+        LIMIT 5
+        """
     )
+
+    # print(article_links)
+
+    # 記事ごとにコメントを取得
     article_comment_links = [
         (article_id, article_link + "/comments")
-        for article_id, article_link in article_links
+        for article_id, article_link, ranking in article_links
     ]
-
-    for article_comment_link in article_comment_links[:2]:
+    for article_comment_link in article_comment_links:
         get_article_comments(
             article_comment_link[0],
             article_comment_link[1],
