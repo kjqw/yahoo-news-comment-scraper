@@ -17,10 +17,10 @@ sys.path.append(str(Path(__file__).parents[1]))
 import db_manager
 
 # %%
-user_num = 5  # ユーザー数
-article_num = 4  # 記事数
-state_dim = 3  # 状態ベクトルの次元数
-k_max = 20  # シミュレーションの時刻の最大値
+user_num = 3  # ユーザー数
+article_num = 2  # 記事数
+state_dim = 4  # 状態ベクトルの次元数
+k_max = 50  # シミュレーションの時刻の最大値
 db_config = {
     "host": "postgresql_db",
     "database": "test_db",

@@ -399,13 +399,13 @@ def ndarray_to_ARRAY(ndarray: np.ndarray) -> str:
         return f"ARRAY[{', '.join(ndarray_to_ARRAY(row) for row in ndarray)}]"
 
 
-def get_params(user_id: int, db_config: dict) -> dict:
+def get_params(user_id: int, metadata_id: int, db_config: dict) -> dict:
     """
     特定の user_id のパラメータを取得して辞書形式で返す関数。
     """
     data = execute_query(
         f"""
-        SELECT * FROM params WHERE node_id = {user_id};
+        SELECT * FROM params WHERE node_id = {user_id} AND metadata_id = {metadata_id}; 
         """,
         db_config,
     )
@@ -421,7 +421,9 @@ def get_params(user_id: int, db_config: dict) -> dict:
     return {column[0]: np.array(data[0][i]) for i, column in enumerate(columns)}
 
 
-def get_parent_state_and_strength(node_id: int, k: int, db_config: dict):
+def get_parent_state_and_strength(
+    node_id: int, k: int, metadata_id: int, db_config: dict
+) -> list[tuple[np.ndarray, float, str]]:
     """
     指定された node_id と k の親ノードの状態と影響度を取得する関数。
     """
@@ -430,7 +432,7 @@ def get_parent_state_and_strength(node_id: int, k: int, db_config: dict):
         f"""
         SELECT parent_ids, parent_ks
         FROM nodes
-        WHERE node_id = {node_id} AND k = {k}
+        WHERE node_id = {node_id} AND k = {k} AND metadata_id = {metadata_id}
         """,
         db_config,
     )[0]
@@ -443,6 +445,7 @@ def get_parent_state_and_strength(node_id: int, k: int, db_config: dict):
             FROM nodes
             WHERE node_id = {parent_id}
             AND k = {parent_k}
+            AND metadata_id = {metadata_id}
             """,
             db_config,
         )
@@ -454,7 +457,7 @@ def get_parent_state_and_strength(node_id: int, k: int, db_config: dict):
         f"""
         SELECT state_dim
         FROM nodes
-        WHERE node_id = {parent_ids[0]} AND k = 0
+        WHERE node_id = {parent_ids[0]} AND k = 0 AND metadata_id = {metadata_id}
         """,
         db_config,
     )[0][0]
