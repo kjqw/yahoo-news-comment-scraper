@@ -240,7 +240,8 @@ class Nodes:
         """
         training_data = []
         for user_id, user_node in self.user_nodes.items():
-            for k in range(1, self.k_max + 1):
+            tmp = []
+            for k in range(1, self.k_max):
                 # 親ノードの状態と影響度を取得
                 parent_nodes = user_node.parents[k]
                 state_parent_article = np.zeros((self.state_dim, 1))
@@ -255,16 +256,20 @@ class Nodes:
                         state_parent_comment = parent_node.states[k_parent]
                         strength_comment = parent_node.strengths[k_parent]
 
-                # 学習データを生成
-                training_data.append(
+                # 学習用データに追加
+                tmp.append(
                     (
+                        user_node.states[k + 1],
                         state_parent_article,
                         state_parent_comment,
-                        user_node.states[k - 1],
+                        user_node.states[k],
                         strength_article,
                         strength_comment,
                     )
                 )
+
+            # ユーザーごとの学習用データを追加
+            training_data.append((user_id, *zip(*tmp)))
 
         return training_data
 
@@ -282,15 +287,81 @@ class Nodes:
             },
             "data": [
                 {
-                    "state_parent_article": state_parent_article.tolist(),
-                    "state_parent_comment": state_parent_comment.tolist(),
-                    "state_user_comment": state_user_comment.tolist(),
-                    "strength_article": strength_article,
-                    "strength_comment": strength_comment,
+                    "user_id": user_id,
+                    "data": [
+                        {
+                            "state": state.tolist(),
+                            "state_parent_article": state_parent_article.tolist(),
+                            "state_parent_comment": state_parent_comment.tolist(),
+                            "state_previous": state_previous.tolist(),
+                            "strength_article": strength_article,
+                            "strength_comment": strength_comment,
+                        }
+                        for state, state_parent_article, state_parent_comment, state_previous, strength_article, strength_comment in zip(
+                            *data
+                        )
+                    ],
                 }
-                for state_parent_article, state_parent_comment, state_user_comment, strength_article, strength_comment in training_data
+                for user_id, *data in training_data
             ],
         }
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with file_path.open("w") as f:
             json.dump(training_data_json, f, indent=4)
+
+    def ndarray_to_ARRAY(self, ndarray: np.ndarray) -> str:
+        """
+        NumPy の ndarray を Postgres の ARRAY に変換するメソッド。多次元配列は多次元の ARRAY に変換する。
+        """
+        if len(ndarray.shape) == 1:
+            # 一次元配列の場合、PostgresのARRAY形式で返す
+            return f"ARRAY{ndarray.tolist()}"
+        else:
+            # 二次元以上の配列の場合、各行に対して再帰的にARRAY形式に変換し、リストにまとめる
+            return f"ARRAY[{', '.join(self.ndarray_to_ARRAY(row) for row in ndarray)}]"
+
+    def save_to_db(
+        self,
+        db_config: dict = {
+            "host": "postgresql_db",
+            "database": "test_db",
+            "user": "kjqw",
+            "password": "1122",
+            "port": "5432",
+        },
+    ):
+        """
+        ノードの情報をデータベースに保存するメソッド。
+        """
+        for article_nodes in self.article_nodes.values():
+            for k in range(self.k_max + 1):
+                query = f"""
+                INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
+                VALUES ({article_nodes.id}, 'article', NULL, NULL, {self.state_dim}, {self.k_max}, {k}, {self.ndarray_to_ARRAY(article_nodes.states[k])}, {article_nodes.strengths[k]}, NULL, NULL, NULL, NULL);
+                """
+                db_manager.execute_query(query, db_config, commit=True)
+
+        for user_nodes in self.user_nodes.values():
+            for k in range(self.k_max + 1):
+                parent_ids = []
+                parent_ks = []
+                for k_parent, parent_node in user_nodes.parents[k]:
+                    parent_ids.append(parent_node.id)
+                    parent_ks.append(k_parent)
+                # 空の場合に型キャストを追加
+                parent_ids_sql = (
+                    f"ARRAY{parent_ids}::integer[]"
+                    if parent_ids
+                    else "ARRAY[]::integer[]"
+                )
+                parent_ks_sql = (
+                    f"ARRAY{parent_ks}::integer[]"
+                    if parent_ks
+                    else "ARRAY[]::integer[]"
+                )
+
+                query = f"""
+                INSERT INTO nodes (node_id, node_type, parent_ids, parent_ks, state_dim, k_max, k, state, strength, W_p, W_q, W_s, b)
+                VALUES ({user_nodes.id}, 'user', {parent_ids_sql}, {parent_ks_sql}, {self.state_dim}, {self.k_max}, {k}, {self.ndarray_to_ARRAY(user_nodes.states[k])}, {user_nodes.strengths[k]}, {self.ndarray_to_ARRAY(user_nodes.weights["W_p"])}, {self.ndarray_to_ARRAY(user_nodes.weights["W_q"])}, {self.ndarray_to_ARRAY(user_nodes.weights["W_s"])}, {self.ndarray_to_ARRAY(user_nodes.bias)});
+                """
+                db_manager.execute_query(query, db_config, commit=True)
