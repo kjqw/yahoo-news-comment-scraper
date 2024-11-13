@@ -274,6 +274,12 @@ class Nodes:
         """
         training_data = self.generate_training_data()
         training_data_json = {
+            "metadata": {
+                "article_num": self.article_num,
+                "user_num": self.user_num,
+                "state_dim": self.state_dim,
+                "k_max": self.k_max,
+            },
             "data": [
                 {
                     "state_parent_article": state_parent_article.tolist(),
@@ -283,7 +289,7 @@ class Nodes:
                     "strength_comment": strength_comment,
                 }
                 for state_parent_article, state_parent_comment, state_user_comment, strength_article, strength_comment in training_data
-            ]
+            ],
         }
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with file_path.open("w") as f:
