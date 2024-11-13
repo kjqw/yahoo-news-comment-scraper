@@ -10,7 +10,7 @@ from scipy.optimize import minimize
 
 sys.path.append(str(Path(__file__).parents[1]))
 
-import db_manager
+from db_manager import execute_query
 
 # %%
 # データベースの接続設定を指定
@@ -21,13 +21,23 @@ db_config = {
     "password": "1122",
     "port": "5432",
 }
+# metadata_id = 2
+metadata_id = execute_query(
+    """
+    SELECT metadata_id
+    FROM metadata
+    ORDER BY metadata_id DESC
+    LIMIT 1
+    """,
+    db_config,
+)[0][0]
 
 # %%
 # データベースから"nodes"テーブルの全データを取得するクエリ
-query = "SELECT * FROM nodes;"
+query = f"SELECT * FROM nodes WHERE metadata_id = {metadata_id};"
 
 # クエリを実行してデータを取得
-data = db_manager.execute_query(query, db_config)
+data = execute_query(query, db_config)
 
 # %%
 # "nodes"テーブルのカラム名を取得するクエリ
@@ -39,7 +49,7 @@ ORDER BY ordinal_position;
 """
 
 # クエリを実行してカラム名のリストを取得
-columns = db_manager.execute_query(query, db_config)
+columns = execute_query(query, db_config)
 
 # カラム名を整える
 columns = [column[0] for column in columns]
@@ -158,19 +168,6 @@ article_num = df_data[df_data["node_type"] == "article"]["node_id"].nunique()
 user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
 state_dim = df_data["state_dim"].values[0]
 k_max = df_data["k"].max()
-
-# メタデータidを取得
-metadata_id = db_manager.execute_query(
-    f"""
-    SELECT metadata_id
-    FROM metadata
-    WHERE article_num = {article_num}
-    AND user_num = {user_num}
-    AND state_dim = {state_dim}
-    AND k_max = {k_max}
-    """,
-    db_config,
-)[0][0]
 
 
 # %%
@@ -300,7 +297,7 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
     VALUES ({user_id}, {metadata_id}, {W_p_str}, {W_q_str}, {W_s_str}, {b_str})
     """
 
-    db_manager.execute_query(
+    execute_query(
         query,
         db_config,
         commit=True,
@@ -316,7 +313,7 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
     WHERE params.node_id = nodes.node_id
     AND nodes.node_id = {user_id}
     """
-    db_manager.execute_query(
+    execute_query(
         query,
         db_config,
         commit=True,
@@ -330,5 +327,5 @@ for user_id in range(article_num, article_num + user_num):
     save_params(params, user_id, db_config)
 
 # %%
-utils.get_params(article_num, db_config)
+utils.get_params(article_num, metadata_id, db_config)
 # %%
