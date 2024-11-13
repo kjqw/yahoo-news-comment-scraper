@@ -67,7 +67,9 @@ graph TD
 ユーザー $i$ の時刻 $k+1$ における状態 $\mathbf{s}_{i, k+1}$ は、時刻 $k$ における状態 $\mathbf{s}_{i, k}$ に加え、記事と他人のコメントの特徴量による影響を以下のように定式化する。
 
 $$
-\mathbf{s}_{i, k+1} = W_{i, p} \left( \alpha_{i}^{(k)} \mathbf{p}_{i}^{(k)} \right) + W_{i, q} \left( \beta_{i}^{(k)} \mathbf{q}_{i}^{(k)} \right) + W_{i, s} \mathbf{s}_{i, k} + \mathbf{b}_{i}
+\mathbf{s}_{i, k+1} = \tanh{\left(
+  W_{i, p} \left( \alpha_{i}^{(k)} \mathbf{p}_{i}^{(k)} \right) + W_{i, q} \left( \beta_{i}^{(k)} \mathbf{q}_{i}^{(k)} \right) + W_{i, s} \mathbf{s}_{i, k} + \mathbf{b}_{i}
+\right)}
 $$
 
 ここで：
@@ -79,48 +81,15 @@ $$
 
 この式は、ユーザーが読んだ記事や他人のコメントの影響、および自分自身の過去の状態が、次の状態にどのように反映されるかをモデル化している。
 
-以下は、全ユーザーに対する定式化における各変数がテンソルであることを明記したバージョンです。
-
-## 全ユーザーに対する定式化
-
-複数のユーザーについて一括で表すために、上記の遷移式をテンソル形式で表す。
-
-$$
-\mathbf{S}_{k+1} = \mathbf{W}_{p} \left( \mathbf{A}_{k} \odot \mathbf{P}_{k} \right) + \mathbf{W}_{q} \left( \mathbf{B}_{k} \odot \mathbf{Q}_{k} \right) + \mathbf{W}_{s} \mathbf{S}_{k} + \mathbf{B}
-$$
-
-ここで：
-
-- $\mathbf{S}_{k} \in \mathbb{R}^{N \times d}$ は、時刻 $k$ における全ユーザーの状態行列（各行がユーザーごとの状態ベクトル）
-- $\mathbf{P}_{k} \in \mathbb{R}^{N \times d}$ は、全ユーザーが読んだ記事の特徴量行列（各行がユーザーに対応する記事の特徴量ベクトル $\mathbf{p}_{i}^{(k)}$）
-- $\mathbf{Q}_{k} \in \mathbb{R}^{N \times d}$ は、全ユーザーが読んだ他人のコメントの特徴量行列（各行がユーザーに対応する他人のコメントの特徴量ベクトル $\mathbf{q}_{i}^{(k)}$）
-- $\mathbf{A}_{k} \in \mathbb{R}^{N \times 1}$ と $\mathbf{B}_{k} \in \mathbb{R}^{N \times 1}$ は、それぞれの記事と他人のコメントの影響度を示すスカラー行列（各行がユーザーに対応するスカラー値）
-- $\odot$ は、行列同士の要素ごとの積（Hadamard積）を示す
-- $\mathbf{W}_{p} \in \mathbb{R}^{N \times d \times d}$、$\mathbf{W}_{q} \in \mathbb{R}^{N \times d \times d}$、$\mathbf{W}_{s} \in \mathbb{R}^{N \times d \times d}$ は、それぞれユーザーごとの記事、他人のコメント、自己影響を示す重み行列テンソル
-  - ここで、$\mathbf{W}_{p}[i]$ はユーザー $i$ の記事の特徴量に対応する重み行列で、同様に $\mathbf{W}_{q}[i]$、$\mathbf{W}_{s}[i]$ が各ユーザーの重み行列となる
-- $\mathbf{B} \in \mathbb{R}^{N \times d}$ は全ユーザーのバイアスベクトル（各行がユーザーごとのバイアスベクトル）
-
-このテンソル形式により、全ユーザーの状態を並行して更新できるため、効率的な計算が可能になります。
-
 ## 最適化方法
 
 パラメータ $\{W_{i, p}, W_{i, q}, W_{i, s}, \mathbf{b}_{i}\}$ を最適化するために、観測データに基づき損失関数を最小化する。例えば、平均二乗誤差（MSE）を使用して次のように定義する。
 
 $$
-\text{Loss} = \frac{1}{N} \sum_{i=1}^{N} \sum_{k=1}^{T} \|\mathbf{s}_{i, k+1}^{\text{observed}} - \mathbf{s}_{i, k+1}^{\text{predicted}}\|^2
+\text{Loss} = \sum_{k=1}^{T} \|\mathbf{s}_{i, k+1}^{\text{observed}} - \mathbf{s}_{i, k+1}^{\text{predicted}}\|^2
 $$
 
 ここで：
 
 - $\mathbf{s}_{i, k+1}^{\text{observed}}$ は観測されたユーザー $i$ の状態
 - $\mathbf{s}_{i, k+1}^{\text{predicted}}$ はモデルによって予測されたユーザー $i$ の状態
-
-この損失関数を最小化するために、勾配降下法やその変種（例えばAdam）を用いる。また、正則化項を追加してパラメータに対する $L2$ 正則化を行い、過学習を防ぐ。
-
-正則化を含む損失関数は次のように表される。
-
-$$
-\text{Regularized Loss} = \text{Loss} + \lambda_{p} \sum_{i=1}^{N} \|W_{i, p}\|^2 + \lambda_{q} \sum_{i=1}^{N} \|W_{i, q}\|^2 + \lambda_{s} \sum_{i=1}^{N} \|W_{i, s}\|^2
-$$
-
-ここで $\lambda_{p}, \lambda_{q}, \lambda_{s}$ はそれぞれの正則化パラメータである。
