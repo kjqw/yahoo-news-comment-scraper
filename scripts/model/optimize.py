@@ -282,25 +282,6 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
     b_str = utils.ndarray_to_ARRAY(b)
 
     # パラメータをデータベースに保存
-    query = """
-    CREATE TABLE IF NOT EXISTS params (
-        user_id INT PRIMARY KEY,
-        w_p_true FLOAT[][],
-        w_q_true FLOAT[][],
-        w_s_true FLOAT[][],
-        b_true FLOAT[],
-        w_p_est FLOAT[][],
-        w_q_est FLOAT[][],
-        w_s_est FLOAT[][],
-        b_est FLOAT[]
-    );
-    """
-    db_manager.execute_query(
-        query,
-        db_config,
-        commit=True,
-    )
-
     query = f"""
     INSERT INTO params (user_id, w_p_est, w_q_est, w_s_est, b_est)
     VALUES ({user_id}, {W_p_str}, {W_q_str}, {W_s_str}, {b_str})
