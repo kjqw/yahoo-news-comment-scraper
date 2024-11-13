@@ -124,22 +124,10 @@ def loss_function(params, data, user_id):
 
 
 # %%
-def optimize_params(data, user_num):
-    params = np.random.rand(3 * state_dim**2 + state_dim)
-    for user_id in range(user_num):
-        res = minimize(
-            loss_function,
-            params,
-            args=(data, user_id),
-            method="L-BFGS-B",
-        )
-        if not res.success:
-            print(f"Optimization failed for user {user_id}")
-        else:
-            print(f"Optimization succeeded for user {user_id}")
-            params = res.x
-
-    return params
+def optimize_params(data, user_id):
+    initial_params = np.random.rand(4 * state_dim**2 + state_dim)
+    res = minimize(loss_function, initial_params, args=(data, user_id))
+    return res.x
 
 
 # %%

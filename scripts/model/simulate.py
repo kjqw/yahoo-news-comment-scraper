@@ -11,20 +11,24 @@ k_max = 20  # シミュレーションの時刻の最大値
 
 # %%
 nodes = classes.Nodes(article_num, user_num, state_dim, k_max)
+
 # %%
 nodes.generate_random_nodes(state_dim)
+
 # %%
 nodes.update_all_states()
-# %%
-nodes.save_training_data_to_json(Path(__file__).parent / "data/training_data.json")
 
-# %%
-nodes.__dict__
+# # %%
+# nodes.save_training_data_to_json(Path(__file__).parent / "data/training_data.json")
 
-# %%
-nodes.user_nodes[article_num].__dict__
-# %%
-nodes.user_nodes[article_num].states
+# # %%
+# nodes.__dict__
+
+# # %%
+# nodes.user_nodes[article_num].__dict__
+
+# # %%
+# nodes.user_nodes[article_num].states
 
 # %%
 import sys
