@@ -54,6 +54,3 @@ services:
       - type: bind
         source: ../db_data
         target: /var/lib/postgresql/data
-      - type: bind
-        source: ./init.sql
-        target: /docker-entrypoint-initdb.d/init.sql
