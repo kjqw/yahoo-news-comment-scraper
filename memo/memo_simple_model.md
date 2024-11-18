@@ -68,7 +68,7 @@ graph TD
 
 $$
 \mathbf{s}_{i, k+1} = \tanh{\left(
-  W_{i, p} \left( \alpha_{i}^{(k)} \mathbf{p}_{i}^{(k)} \right) + W_{i, q} \left( \beta_{i}^{(k)} \mathbf{q}_{i}^{(k)} \right) + W_{i, s} \mathbf{s}_{i, k} + \mathbf{b}_{i}
+  W_{i, p} \alpha_{i}^{(k)} \mathbf{p}_{i}^{(k)}  + W_{i, q}  \beta_{i}^{(k)} \mathbf{q}_{i}^{(k)}  + W_{i, s} \mathbf{s}_{i, k} + \mathbf{b}_{i}
 \right)}
 $$
 
