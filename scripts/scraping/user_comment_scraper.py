@@ -73,21 +73,39 @@ def get_articles_and_comments(
         WebDriverWait(driver, timeout).until(
             EC.presence_of_all_elements_located((By.XPATH, XPATH_COMMENT_SECTIONS))
         )
-
         comment_sections = driver.find_elements(By.XPATH, XPATH_COMMENT_SECTIONS)
-        return comment_sections
+
+        for comment_section in comment_sections[11:12]:
+            # for comment_section in comment_sections:
+            for block in comment_section.find_elements(By.XPATH, "article"):
+                if block.find_elements(By.XPATH, "a"):
+                    print("記事")
+                elif block.find_elements(By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COUNT):
+                    print("記事への返信")
+                elif block.find_elements(By.XPATH, RELATIVE_XPATH_COMMENT_TEXT):
+                    print("返信コメント")
+                elif block.find_elements(
+                    By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COMMENT_LINK
+                ):
+                    print("返信先のリンク")
+                elif block.find_elements(
+                    By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COMMENT_TEXT
+                ):
+                    print("削除されたコメント")
+
+            return comment_section.get_attribute("outerHTML")
 
     finally:
         driver.quit()
 
 
-# %%
 if __name__ == "__main__":
     url = "https://news.yahoo.co.jp/users/9BDLMjtCapOdtyDb4scwLvKCSCm4G-CwFHqKB2o97ej0XkV200"
-    max_comments = 30
+    max_comments = 20
+    # max_comments = 10
 
     result = get_articles_and_comments(url, max_comments)
     print(result)
 # %%
-len(result)
+
 # %%
