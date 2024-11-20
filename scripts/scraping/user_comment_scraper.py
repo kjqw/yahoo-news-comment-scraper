@@ -56,7 +56,7 @@ def get_articles_and_comments(
                 "total_disagreements_count": XPATH_TOTAL_DISAGREEMENTS,
             },
         )
-        user.save_data()
+        user.save_data("users", db_config)
 
         # 「もっと見る」ボタンが表示されるまで待機
         WebDriverWait(driver, timeout).until(
@@ -105,7 +105,7 @@ def get_articles_and_comments(
                             "posted_time": RELATIVE_XPATH_ARTICLE_POSTED_TIME,
                         },
                     )
-                    article.save_data()
+                    article.save_data("articles", db_config)
 
                 # 記事に対するコメント
                 elif block.find_elements(By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COUNT):
@@ -123,7 +123,7 @@ def get_articles_and_comments(
                             "reply_count": RELATIVE_XPATH_COMMENT_REPLY_COUNT,
                         },
                     )
-                    comment.save_data()
+                    comment.save_data("comments", db_config)
 
                 # コメントに対する返信コメント
                 elif block.find_elements(By.XPATH, RELATIVE_XPATH_COMMENT_TEXT):
@@ -141,7 +141,7 @@ def get_articles_and_comments(
                                 "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS,
                             },
                         )
-                        comment.save_data()
+                        comment.save_data("comments", db_config)
                         comment_id = execute_query(
                             query=f"""
                             SELECT comment_id
