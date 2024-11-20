@@ -7,9 +7,9 @@ services:
     volumes:
       # LLMのモデルを保存する場所を source: に指定すると、コンテナを消してもそこにダウンロードしたモデルが残る
       # 別のコンテナで同じモデルを使いたい場合に便利
-      # - type: bind
-      #   source: /home/kjqw/university/.cache
-      #   target: /workspace/.cache
+      - type: bind
+        source: /home/kjqw/university/.cache
+        target: /workspace/.cache
       - type: bind
         source: ../
         target: /workspace/yahoo-news-comment-scraper
@@ -19,17 +19,17 @@ services:
     working_dir: /workspace
     # コンテナ内でGPUを使う場合は以下の設定を追加する
     # NVIDIA Container Toolkitをインストールしていないと使えない
-    # runtime: nvidia
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           capabilities: [ gpu ]
-    # environment:
-    #   - HF_HOME=/workspace/.cache/huggingface # これはtransformersライブラリがモデルを保存したり読み込んだりするディレクトリを指定するための環境変数。GPUの設定とは無関係
-    #   - NVIDIA_VISIBLE_DEVICES=all
-    #   - NVIDIA_DRIVER_CAPABILITIES=all
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+    environment:
+      - HF_HOME=/workspace/.cache/huggingface # これはtransformersライブラリがモデルを保存したり読み込んだりするディレクトリを指定するための環境変数。GPUの設定とは無関係
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     command: sleep infinity
 
   selenium:
