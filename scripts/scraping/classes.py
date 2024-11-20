@@ -75,6 +75,8 @@ class DBBase:
                 except Exception as e:
                     print(f"{key}を取得中にエラーが発生しました: {e}")
 
+            self.normalize_number()
+
         except:
             pass
 
