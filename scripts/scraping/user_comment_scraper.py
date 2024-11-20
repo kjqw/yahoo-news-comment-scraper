@@ -171,7 +171,24 @@ def get_articles_and_comments(
                 ):
                     print("削除されたコメント")
 
-            return comment_section.get_attribute("outerHTML")
+        for reply_comment_link, comment_id in zip(reply_comment_links, comment_ids):
+            driver.get(reply_comment_link)
+            element = driver.find_element(By.XPATH, XPATH_REPLY_COMMENT_SECTION)
+
+            reply_comment = DBBase()
+            reply_comment.get_info(
+                element,
+                {
+                    "username": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
+                    "user_link": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
+                    "posted_time": RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME,
+                    "comment_content": RELATIVE_XPATH_REPLY_COMMENT_TEXT,
+                    "agreements_count": RELATIVE_XPATH_REPLY_COMMENT_AGREEMENTS,
+                    "acknowledgements_count": RELATIVE_XPATH_REPLY_COMMENT_ACKNOWLEDGEMENTS,
+                    "disagreements_count": RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS,
+                },
+            )
+            reply_comment.save_data("comments", db_config)
 
     finally:
         driver.quit()
