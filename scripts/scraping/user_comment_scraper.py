@@ -115,18 +115,22 @@ def get_and_save_articles_and_comments(
                     comment = DBBase()
                     comment.username = user.username
                     comment.user_link = url
-                    comment.get_info(
-                        block,
-                        {
-                            "posted_time": RELATIVE_XPATH_COMMENT_POSTED_TIME,
-                            "comment_content": RELATIVE_XPATH_COMMENT_TEXT,
-                            "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS,
-                            "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS,
-                            "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS,
-                            "reply_count": RELATIVE_XPATH_COMMENT_REPLY_COUNT,
-                        },
-                    )
-                    comment.save_data("comments", db_config)
+                    try:
+                        comment.get_info(
+                            block,
+                            {
+                                "posted_time": RELATIVE_XPATH_COMMENT_POSTED_TIME_1,
+                                "comment_content": RELATIVE_XPATH_COMMENT_TEXT,
+                                "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS,
+                                "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS,
+                                "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS,
+                                "reply_count": RELATIVE_XPATH_COMMENT_REPLY_COUNT,
+                            },
+                        )
+                        comment.save_data("comments", db_config)
+
+                    except:
+                        pass
 
                 # コメントに対する返信コメント
                 elif block.find_elements(By.XPATH, RELATIVE_XPATH_COMMENT_TEXT):
@@ -137,7 +141,7 @@ def get_and_save_articles_and_comments(
                         comment.get_info(
                             block,
                             {
-                                "posted_time": RELATIVE_XPATH_COMMENT_POSTED_TIME,
+                                "posted_time": RELATIVE_XPATH_COMMENT_POSTED_TIME_2,
                                 "comment_content": RELATIVE_XPATH_COMMENT_TEXT,
                                 "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS,
                                 "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS,
