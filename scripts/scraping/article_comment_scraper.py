@@ -253,12 +253,16 @@ def get_article_comments(
                 general_comment.save_data("comments")
 
                 # 一般コメントのIDをクラスに追加
-                general_comment.comment_id = db_manager.execute_query(
-                    f"""
-                    SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND comment_content = '{general_comment.comment_content}'
-                    """,
-                    db_config,
-                )[0][0]
+                try:
+                    # 同じ記事に対して同じユーザーが同じコメントを投稿している場合は片方のみを取得
+                    general_comment.comment_id = db_manager.execute_query(
+                        f"""
+                        SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND comment_content = '{general_comment.comment_content}'
+                        """,
+                        db_config,
+                    )[0][0]
+                except:
+                    continue
 
                 # 返信コメントのセクションを取得
                 reply_comment_sections = get_reply_comment_sections(
