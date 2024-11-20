@@ -1,10 +1,8 @@
 import sys
-from collections import defaultdict
 from math import ceil
 from pathlib import Path
 
 import functions
-import psycopg2
 from classes import DBBase
 from selenium import webdriver
 from selenium.webdriver.common.by import By
