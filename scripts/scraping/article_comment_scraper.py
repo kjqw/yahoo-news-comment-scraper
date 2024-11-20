@@ -255,7 +255,7 @@ def get_article_comments(
                 # 一般コメントのIDをクラスに追加
                 general_comment.comment_id = db_manager.execute_query(
                     f"""
-                    SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND posted_time = '{general_comment.posted_time}'
+                    SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND comment_content = '{general_comment.comment_content}'
                     """,
                     db_config,
                 )[0][0]
