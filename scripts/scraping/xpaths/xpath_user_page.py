@@ -29,10 +29,12 @@ RELATIVE_XPATH_COMMENT_REPLY_COMMENT_LINK = "div/div[1]/a"  # ないこともあ
 # 返信先のコメントが削除されている場合は "div/div[1]/p" に "削除されたコメントです" という文字列が入っている
 RELATIVE_XPATH_COMMENT_REPLY_COMMENT_TEXT = "div/div[1]/p"
 
-RELATIVE_XPATH_COMMENT_POSTED_TIME = "div/div/div[1]/time"
+RELATIVE_XPATH_COMMENT_POSTED_TIME_1 = "div/div/div[1]/a"
+RELATIVE_XPATH_COMMENT_POSTED_TIME_2 = "/div/div/div[1]/time"
 RELATIVE_XPATH_COMMENT_TEXT = (
     "div/div/div[2]/p"  # 記事に対するコメントでも返信コメントでもパスは同じ
 )
+# posted_time や agreement_count は、記事に対するコメントか返信コメントによってパスが異なる。あとで変える
 RELATIVE_XPATH_COMMENT_AGREEMENTS = "div/div/div[2]/ul/li[1]/div/span/span[2]"
 RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS = "div/div/div[2]/ul/li[2]/div/span/span[2]"
 RELATIVE_XPATH_COMMENT_DISAGREEMENTS = "div/div/div[2]/ul/li[3]/div/span/span[2]"
