@@ -63,6 +63,7 @@ def get_articles_and_comments(
             EC.presence_of_all_elements_located((By.XPATH, XPATH_COMMENT_MORE_BUTTON))
         )
         cnt = 0
+        tmp = len(driver.find_elements(By.XPATH, XPATH_COMMENT_SECTIONS))
         while cnt < max_comments // 10 and driver.find_elements(
             By.XPATH, XPATH_COMMENT_MORE_BUTTON
         ):
@@ -70,12 +71,14 @@ def get_articles_and_comments(
             # 「もっと見る」ボタンをクリック
             driver.find_element(By.XPATH, XPATH_COMMENT_MORE_BUTTON).click()
 
-            # 次の「もっと見る」ボタンが表示されるまで待機
+            # コメントセクションの数が増えているか確認
             WebDriverWait(driver, timeout).until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, XPATH_COMMENT_MORE_BUTTON)
+                lambda driver: len(
+                    driver.find_elements(By.XPATH, XPATH_COMMENT_SECTIONS)
                 )
+                > tmp
             )
+            tmp = len(driver.find_elements(By.XPATH, XPATH_COMMENT_SECTIONS))
 
             cnt += 1
             print(f"{cnt}回目の「もっと見る」ボタンをクリックしました")
@@ -202,7 +205,7 @@ if __name__ == "__main__":
         "password": "1122",
         "port": "5432",
     }
-    url = "https://news.yahoo.co.jp/users/X7TFZx-deOgXyW_HWWzye3zdqcevskp4arQbJtxwK7lf-ksj00"
+    url = "https://news.yahoo.co.jp/users/eHCBfsjEFqRmy5UU44f-zPcdHpQ2j3hufgh5-VsS1Qx4Pg8600"
     max_comments = 20
     # max_comments = 10
 
