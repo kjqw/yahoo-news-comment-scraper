@@ -35,14 +35,15 @@ execute_query(query, db_config=db_config, commit=True)
 # %%
 article_link_scraper.get_and_save_articles()
 # %%
-default_max_comments = 10
-default_max_replies = 5
+default_max_comments = 30
+default_max_replies = 10
+default_max_articles = 10
 default_timeout = 10
 
 # %%
 # 記事のリンクを取得
 article_links = execute_query(
-    query="""
+    query=f"""
     SELECT article_id, article_link, ranking
     FROM (
         SELECT article_id, article_link, ranking,
@@ -51,7 +52,7 @@ article_links = execute_query(
     ) AS ranked_articles
     WHERE rn = 1
     ORDER BY ranking ASC
-    LIMIT 5
+    LIMIT {default_max_articles};
     """,
     db_config=db_config,
 )
@@ -61,7 +62,7 @@ article_links = execute_query(
 # 記事ごとにコメントを取得
 article_comment_links = [
     (article_id, article_link + "/comments")
-    for article_id, article_link, ranking in article_links[:2]
+    for article_id, article_link, ranking in article_links
 ]
 for article_id, article_comment_link in article_comment_links:
     article_comment_scraper.get_article_comments(
