@@ -29,5 +29,9 @@ CREATE TABLE IF NOT EXISTS comments (
     reply_count INTEGER,
     -- scraping_status BOOLEAN DEFAULT FALSE, -- スクレイピング成功フラグ
     scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (article_id, user_link, comment_content)
+    UNIQUE (
+article_id,
+user_link,
+comment_content
+)
 );
