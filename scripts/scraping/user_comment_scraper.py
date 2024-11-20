@@ -195,12 +195,17 @@ def get_articles_and_comments(
 
 
 if __name__ == "__main__":
-    url = "https://news.yahoo.co.jp/users/9BDLMjtCapOdtyDb4scwLvKCSCm4G-CwFHqKB2o97ej0XkV200"
+    db_config = {
+        "host": "postgresql_db",
+        "database": "yahoo_news",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    }
+    url = "https://news.yahoo.co.jp/users/X7TFZx-deOgXyW_HWWzye3zdqcevskp4arQbJtxwK7lf-ksj00"
     max_comments = 20
     # max_comments = 10
 
-    result = get_articles_and_comments(url, max_comments)
+    result = get_articles_and_comments(db_config, url, max_comments)
     print(result)
-# %%
-
 # %%
