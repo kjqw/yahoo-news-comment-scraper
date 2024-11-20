@@ -246,12 +246,17 @@ def get_article_comments(
                 general_comment.normalize_number()
 
                 general_comment.article_id = article_id
-                general_comment.comment_id = db_manager.execute_query(
-                    "SELECT COALESCE(MAX(comment_id) + 1, 1) AS next_comment_id FROM comments"
-                )[0][0]
 
                 # 一般コメントの情報を保存
                 general_comment.save_data("comments")
+
+                # 一般コメントのIDをクラスに追加
+                general_comment.comment_id = db_manager.execute_query(
+                    f"""
+                    SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND posted_time = '{general_comment.posted_time}'
+                    """,
+                    DB_CONFIG,
+                )[0][0]
 
                 # 返信コメントのセクションを取得
                 reply_comment_sections = get_reply_comment_sections(
@@ -273,9 +278,6 @@ def get_article_comments(
 
                         reply_comment.parent_comment_id = general_comment.comment_id
                         reply_comment.article_id = article_id
-                        reply_comment.comment_id = db_manager.execute_query(
-                            "SELECT COALESCE(MAX(comment_id) + 1, 1) AS next_comment_id FROM comments"
-                        )[0][0]
 
                         # 返信コメントの情報を保存
                         reply_comment.save_data("comments")
