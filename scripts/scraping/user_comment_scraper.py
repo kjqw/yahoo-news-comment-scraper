@@ -51,9 +51,9 @@ def get_articles_and_comments(
             {
                 "username": XPATH_USER_NAME,
                 "total_comment_count": XPATH_TOTAL_COMMENT_COUNT,
-                "total_agreements": XPATH_TOTAL_AGREEMENTS,
-                "total_acknowledgements": XPATH_TOTAL_ACKNOWLEDGEMENTS,
-                "total_disagreements": XPATH_TOTAL_DISAGREEMENTS,
+                "total_agreements_count": XPATH_TOTAL_AGREEMENTS,
+                "total_acknowledgements_count": XPATH_TOTAL_ACKNOWLEDGEMENTS,
+                "total_disagreements_count": XPATH_TOTAL_DISAGREEMENTS,
             },
         )
         user.save_data()
