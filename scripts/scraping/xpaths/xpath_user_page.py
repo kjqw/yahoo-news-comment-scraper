@@ -41,3 +41,14 @@ RELATIVE_XPATH_COMMENT_REPLY_COUNT = "div/div/div[2]/div/a/span[2]"  # これの
 XPATH_COMMENT_MORE_BUTTON = (
     "/html/body/div[1]/div/main/div[1]/div/div[4]/div/span/button"
 )
+
+# ------------------------------------------------------------
+# 返信先のコメントの独立ページのXPath
+XPATH_REPLY_COMMENT_SECTION = "/html/body/div[1]/div/main/div[1]/div/div[1]"
+
+RELATIVE_XPATH_REPLY_COMMENT_USERNAME = "article/div/div[2]/div/a"
+RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME = "article/div/div[2]/div/time"
+RELATIVE_XPATH_REPLY_COMMENT_TEXT = "article/p"
+RELATIVE_XPATH_REPLY_COMMENT_AGREEMENTS = "div[2]/ul/li[1]/button[2]/span/span[2]"
+RELATIVE_XPATH_REPLY_COMMENT_ACKNOWLEDGEMENTS = "div[2]/ul/li[2]/button[2]/span/span[2]"
+RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS = "div[2]/ul/li[3]/button[2]/span/span[2]"
