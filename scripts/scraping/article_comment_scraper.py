@@ -149,6 +149,7 @@ def get_reply_comment_sections(
 
 
 def get_article_comments(
+    db_config: dict[str, str],
     article_id: int,
     url: str,
     max_comments: int,
@@ -173,6 +174,8 @@ def get_article_comments(
         コメントの表示順。 "newer" または "recommended" のいずれかを指定
     timeout : int, Optional
         WebDriverのタイムアウト時間
+    db_config : dict[str, str], Optional
+        データベースの接続情報
     """
 
     try:
@@ -215,12 +218,12 @@ def get_article_comments(
 
         db_manager.execute_query(
             f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
-            DB_CONFIG,
+            db_config,
             commit=True,
         )
         db_manager.execute_query(
             f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
-            DB_CONFIG,
+            db_config,
             commit=True,
         )
 
@@ -256,7 +259,7 @@ def get_article_comments(
                     f"""
                     SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND posted_time = '{general_comment.posted_time}'
                     """,
-                    DB_CONFIG,
+                    db_config,
                 )[0][0]
 
                 # 返信コメントのセクションを取得
@@ -297,7 +300,7 @@ if __name__ == "__main__":
     default_max_replies = 20
     # default_order = "recommended"
     default_timeout = 10
-    DB_CONFIG = {
+    db_config = {
         "host": "postgresql_db",
         "database": "yahoo_news",
         "user": "kjqw",
@@ -329,6 +332,7 @@ if __name__ == "__main__":
     ]
     for article_id, article_comment_link in article_comment_links:
         get_article_comments(
+            db_config,
             article_id,
             article_comment_link,
             default_max_comments,
