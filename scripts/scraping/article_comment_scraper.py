@@ -243,6 +243,7 @@ def get_article_comments(
                 general_comment.get_info(
                     general_comment_section, xpaths_general_comments
                 )
+                # 数値を正規化
                 general_comment.normalize_number()
 
                 general_comment.article_id = article_id
@@ -274,6 +275,7 @@ def get_article_comments(
                         reply_comment.get_info(
                             reply_comment_section, xpaths_reply_comments
                         )
+                        # 数値を正規化
                         reply_comment.normalize_number()
 
                         reply_comment.parent_comment_id = general_comment.comment_id
@@ -304,9 +306,6 @@ if __name__ == "__main__":
     }
 
     # 記事のリンクを取得
-    # article_links = db_manager.execute_query(
-    #     "SELECT article_id, article_link FROM articles"
-    # )
     article_links = db_manager.execute_query(
         """
         SELECT article_id, article_link, ranking
@@ -328,10 +327,10 @@ if __name__ == "__main__":
         (article_id, article_link + "/comments")
         for article_id, article_link, ranking in article_links
     ]
-    for article_comment_link in article_comment_links:
+    for article_id, article_comment_link in article_comment_links:
         get_article_comments(
-            article_comment_link[0],
-            article_comment_link[1],
+            article_id,
+            article_comment_link,
             default_max_comments,
             default_max_replies,
             timeout=default_timeout,
