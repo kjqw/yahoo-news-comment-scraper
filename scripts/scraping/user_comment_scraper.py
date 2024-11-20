@@ -16,7 +16,7 @@ from db_manager import execute_query
 
 
 # %%
-def get_articles_and_comments(
+def get_and_save_articles_and_comments(
     db_config: dict,
     url: str,
     max_comments: int,
@@ -209,6 +209,6 @@ if __name__ == "__main__":
     max_comments = 20
     # max_comments = 10
 
-    result = get_articles_and_comments(db_config, url, max_comments)
+    result = get_and_save_articles_and_comments(db_config, url, max_comments)
     print(result)
 # %%
