@@ -10,8 +10,9 @@ CREATE TABLE IF NOT EXISTS articles (
     comment_count_per_hour INTEGER,
     total_comment_count_with_reply INTEGER,
     total_comment_count_without_reply INTEGER,
-    scraping_status BOOLEAN DEFAULT FALSE, -- スクレイピング成功フラグ
-    scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- scraping_status BOOLEAN DEFAULT FALSE, -- スクレイピング成功フラグ
+    scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (article_link)
 );
 
 CREATE TABLE IF NOT EXISTS comments (
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS comments (
     acknowledgements_count INTEGER,
     disagreements_count INTEGER,
     reply_count INTEGER,
-    scraping_status BOOLEAN DEFAULT FALSE, -- スクレイピング成功フラグ
+    -- scraping_status BOOLEAN DEFAULT FALSE, -- スクレイピング成功フラグ
     scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (article_id, user_link, comment_content)
 );
