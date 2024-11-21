@@ -17,10 +17,12 @@ sys.path.append(str(Path(__file__).parents[1]))
 import db_manager
 
 # %%
+# 定数の定義
 user_num = 3  # ユーザー数
 article_num = 2  # 記事数
 state_dim = 4  # 状態ベクトルの次元数
 k_max = 50  # シミュレーションの時刻の最大値
+identifier = 1  # メタ情報が同じ時に区別するための識別子
 db_config = {
     "host": "postgresql_db",
     "database": "test_db",
@@ -34,7 +36,7 @@ init_sql_path = (
 
 # %%
 # ノードのインスタンスを生成。ランダムに初期値や重み行列が設定される
-nodes = utils.Nodes(article_num, user_num, state_dim, k_max)
+nodes = utils.Nodes(article_num, user_num, state_dim, k_max, identifier)
 # ノードの親子関係をランダムに生成
 nodes.generate_random_nodes(state_dim)
 # 状態ベクトルを更新
