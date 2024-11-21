@@ -509,4 +509,7 @@ def update_method(
         + noise
     )
 
-    return new_state
+    # 離散化処理
+    discrete_state = np.where(new_state > 0.5, 1, np.where(new_state < -0.5, -1, 0))
+
+    return discrete_state
