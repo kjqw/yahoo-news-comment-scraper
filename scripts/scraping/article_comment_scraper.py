@@ -1,10 +1,8 @@
 import sys
-from collections import defaultdict
 from math import ceil
 from pathlib import Path
 
 import functions
-import psycopg2
 from classes import DBBase
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -149,6 +147,7 @@ def get_reply_comment_sections(
 
 
 def get_article_comments(
+    db_config: dict[str, str],
     article_id: int,
     url: str,
     max_comments: int,
@@ -173,6 +172,8 @@ def get_article_comments(
         コメントの表示順。 "newer" または "recommended" のいずれかを指定
     timeout : int, Optional
         WebDriverのタイムアウト時間
+    db_config : dict[str, str], Optional
+        データベースの接続情報
     """
 
     try:
@@ -180,7 +181,7 @@ def get_article_comments(
             "username": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
             "user_link": RELATIVE_XPATH_GENERAL_COMMENT_USERNAME,
             "posted_time": RELATIVE_XPATH_GENERAL_COMMENT_POSTED_TIME,
-            "comment_text": RELATIVE_XPATH_GENERAL_COMMENT_COMMENT_TEXT,
+            "comment_content": RELATIVE_XPATH_GENERAL_COMMENT_COMMENT_TEXT,
             "agreements_count": RELATIVE_XPATH_GENERAL_COMMENT_AGREEMENTS,
             "acknowledgements_count": RELATIVE_XPATH_GENERAL_COMMENT_ACKNOWLEDGEMENTS,
             "disagreements_count": RELATIVE_XPATH_GENERAL_COMMENT_DISAGREEMENTS,
@@ -190,7 +191,7 @@ def get_article_comments(
             "username": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
             "user_link": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
             "posted_time": RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME,
-            "comment_text": RELATIVE_XPATH_REPLY_COMMENT_COMMENT_TEXT,
+            "comment_content": RELATIVE_XPATH_REPLY_COMMENT_COMMENT_TEXT,
             "agreements_count": RELATIVE_XPATH_REPLY_COMMENT_AGREEMENTS,
             "acknowledgements_count": RELATIVE_XPATH_REPLY_COMMENT_ACKNOWLEDGEMENTS,
             "disagreements_count": RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS,
@@ -202,27 +203,27 @@ def get_article_comments(
         # 記事のコメントページを開く
         driver.get(url)
 
-        # # コメント数を取得
-        # total_comment_count_with_reply, total_comment_count_without_reply = (
-        #     get_total_comment_count(driver)
-        # )
-        # total_comment_count_with_reply = functions.normalize_number(
-        #     total_comment_count_with_reply
-        # )
-        # total_comment_count_without_reply = functions.normalize_number(
-        #     total_comment_count_without_reply
-        # )
+        # コメント数を取得
+        total_comment_count_with_reply, total_comment_count_without_reply = (
+            get_total_comment_count(driver)
+        )
+        total_comment_count_with_reply = functions.normalize_number(
+            total_comment_count_with_reply
+        )
+        total_comment_count_without_reply = functions.normalize_number(
+            total_comment_count_without_reply
+        )
 
-        # db_manager.execute_query(
-        #     f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
-        #     DB_CONFIG,
-        #     commit=True,
-        # )
-        # db_manager.execute_query(
-        #     f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
-        #     DB_CONFIG,
-        #     commit=True,
-        # )
+        db_manager.execute_query(
+            f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
+            db_config,
+            commit=True,
+        )
+        db_manager.execute_query(
+            f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
+            db_config,
+            commit=True,
+        )
 
         # 最大数に達するまでコメントを取得
         page = 1
@@ -243,15 +244,25 @@ def get_article_comments(
                 general_comment.get_info(
                     general_comment_section, xpaths_general_comments
                 )
+                # 数値を正規化
                 general_comment.normalize_number()
 
                 general_comment.article_id = article_id
-                general_comment.comment_id = db_manager.execute_query(
-                    "SELECT COALESCE(MAX(comment_id) + 1, 1) AS next_comment_id FROM comments"
-                )[0][0]
 
                 # 一般コメントの情報を保存
                 general_comment.save_data("comments")
+
+                # 一般コメントのIDをクラスに追加
+                try:
+                    # 同じ記事に対して同じユーザーが同じコメントを投稿している場合は片方のみを取得
+                    general_comment.comment_id = db_manager.execute_query(
+                        f"""
+                        SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND comment_content = '{general_comment.comment_content}'
+                        """,
+                        db_config,
+                    )[0][0]
+                except:
+                    continue
 
                 # 返信コメントのセクションを取得
                 reply_comment_sections = get_reply_comment_sections(
@@ -269,13 +280,11 @@ def get_article_comments(
                         reply_comment.get_info(
                             reply_comment_section, xpaths_reply_comments
                         )
+                        # 数値を正規化
                         reply_comment.normalize_number()
 
                         reply_comment.parent_comment_id = general_comment.comment_id
                         reply_comment.article_id = article_id
-                        reply_comment.comment_id = db_manager.execute_query(
-                            "SELECT COALESCE(MAX(comment_id) + 1, 1) AS next_comment_id FROM comments"
-                        )[0][0]
 
                         # 返信コメントの情報を保存
                         reply_comment.save_data("comments")
@@ -293,7 +302,7 @@ if __name__ == "__main__":
     default_max_replies = 20
     # default_order = "recommended"
     default_timeout = 10
-    DB_CONFIG = {
+    db_config = {
         "host": "postgresql_db",
         "database": "yahoo_news",
         "user": "kjqw",
@@ -302,9 +311,6 @@ if __name__ == "__main__":
     }
 
     # 記事のリンクを取得
-    # article_links = db_manager.execute_query(
-    #     "SELECT article_id, article_link FROM articles"
-    # )
     article_links = db_manager.execute_query(
         """
         SELECT article_id, article_link, ranking
@@ -326,10 +332,11 @@ if __name__ == "__main__":
         (article_id, article_link + "/comments")
         for article_id, article_link, ranking in article_links
     ]
-    for article_comment_link in article_comment_links:
+    for article_id, article_comment_link in article_comment_links:
         get_article_comments(
-            article_comment_link[0],
-            article_comment_link[1],
+            db_config,
+            article_id,
+            article_comment_link,
             default_max_comments,
             default_max_replies,
             timeout=default_timeout,

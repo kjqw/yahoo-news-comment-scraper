@@ -75,6 +75,8 @@ class DBBase:
                 except Exception as e:
                     print(f"{key}を取得中にエラーが発生しました: {e}")
 
+            self.normalize_number()
+
         except:
             pass
 
@@ -92,6 +94,10 @@ class DBBase:
             "acknowledgements_count",
             "disagreements_count",
             "reply_count",
+            "total_comment_count",
+            "total_agreements_count",
+            "total_acknowledgements_count",
+            "total_disagreements_count",
         ]
         for key in keys:
             # 属性が存在し、Noneではない場合に処理を実行
