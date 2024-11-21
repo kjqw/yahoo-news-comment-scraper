@@ -178,13 +178,21 @@ class Nodes:
     全ノードを管理し、親子関係と状態遷移を統括するクラス。
     """
 
-    def __init__(self, article_num: int, user_num: int, state_dim: int, k_max: int):
+    def __init__(
+        self,
+        article_num: int,
+        user_num: int,
+        state_dim: int,
+        k_max: int,
+        identifier: int = 1,
+    ):
         self.article_num = article_num
         self.user_num = user_num
         self.state_dim = state_dim
         self.user_nodes = {}  # ユーザーコメントノードの辞書
         self.article_nodes = {}  # 記事ノードの辞書
         self.k_max = k_max
+        self.identifier = identifier
 
     def generate_random_nodes(self, state_dim: int) -> None:
         """
@@ -338,8 +346,8 @@ class Nodes:
         """
         # メタデータを保存
         query = f"""
-        INSERT INTO metadata (article_num, user_num, state_dim, k_max)
-        VALUES ({self.article_num}, {self.user_num}, {self.state_dim}, {self.k_max});
+        INSERT INTO metadata (article_num, user_num, state_dim, k_max, identifier)
+        VALUES ({self.article_num}, {self.user_num}, {self.state_dim}, {self.k_max}, {self.identifier});
         """
         execute_query(query, db_config, commit=True)
         # メタデータのIDを取得
