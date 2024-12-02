@@ -193,7 +193,7 @@ def get_and_save_articles_and_comments(
                 elif block.find_elements(
                     By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COMMENT_TEXT
                 ):
-                    pass
+                    next_is_reply_comment = True
 
         for reply_comment_link, comment_id in zip(reply_comment_links, comment_ids):
             try:
@@ -213,7 +213,14 @@ def get_and_save_articles_and_comments(
                         "disagreements_count": RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS,
                     },
                 )
-                reply_comment.article_id = article.article_id
+                reply_comment.article_id = execute_query(
+                    query=f"""
+                    SELECT article_id
+                    FROM comments
+                    WHERE comment_id = {comment_id}
+                    """,
+                    db_config=db_config,
+                )[0][0]
                 reply_comment.save_data("comments", db_config)
 
                 reply_comment_id = execute_query(
