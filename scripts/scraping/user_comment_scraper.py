@@ -292,5 +292,3 @@ if __name__ == "__main__":
     for url in user_links:
         get_and_save_articles_and_comments(db_config, url, max_comments)
 # %%
-user_links
-# %%
