@@ -14,7 +14,7 @@ from xpaths.xpath_article_comment_page import *
 
 sys.path.append(str(Path(__file__).parents[1]))
 
-import db_manager
+from db_manager import execute_query
 
 
 def get_total_comment_count(driver: webdriver) -> list[str]:
@@ -214,12 +214,12 @@ def get_article_comments(
             total_comment_count_without_reply
         )
 
-        db_manager.execute_query(
+        execute_query(
             f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
             db_config,
             commit=True,
         )
-        db_manager.execute_query(
+        execute_query(
             f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
             db_config,
             commit=True,
@@ -255,7 +255,7 @@ def get_article_comments(
                 # 一般コメントのIDをクラスに追加
                 try:
                     # 同じ記事に対して同じユーザーが同じコメントを投稿している場合は片方のみを取得
-                    general_comment.comment_id = db_manager.execute_query(
+                    general_comment.comment_id = execute_query(
                         f"""
                         SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND comment_content = '{general_comment.comment_content}'
                         """,
@@ -311,16 +311,25 @@ if __name__ == "__main__":
     }
 
     # 記事のリンクを取得
-    article_links = db_manager.execute_query(
+    # article_links = execute_query(
+    #     """
+    #     SELECT article_id, article_link, ranking
+    #     FROM (
+    #         SELECT article_id, article_link, ranking,
+    #             ROW_NUMBER() OVER (PARTITION BY article_link ORDER BY ranking) AS rn
+    #         FROM articles
+    #     ) AS ranked_articles
+    #     WHERE rn = 1
+    #     ORDER BY ranking ASC
+    #     LIMIT 5
+    #     """
+    # )
+    article_links = execute_query(
         """
-        SELECT article_id, article_link, ranking
-        FROM (
-            SELECT article_id, article_link, ranking,
-                ROW_NUMBER() OVER (PARTITION BY article_link ORDER BY ranking) AS rn
-            FROM articles
-        ) AS ranked_articles
-        WHERE rn = 1
-        ORDER BY ranking ASC
+        SELECT article_id, article_link, comment_count_per_hour
+        FROM articles
+        WHERE comment_count_per_hour IS NOT NULL
+        ORDER BY comment_count_per_hour desc
         LIMIT 5
         """
     )
@@ -330,7 +339,7 @@ if __name__ == "__main__":
     # 記事ごとにコメントを取得
     article_comment_links = [
         (article_id, article_link + "/comments")
-        for article_id, article_link, ranking in article_links
+        for article_id, article_link, _ in article_links
     ]
     for article_id, article_comment_link in article_comment_links:
         get_article_comments(
