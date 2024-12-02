@@ -248,6 +248,34 @@ def get_and_save_articles_and_comments(
         driver.quit()
 
 
+def get_user_links_from_db(db_config: dict, num: int):
+    """
+    データベースからユーザーのリンクを取得する。
+
+    Parameters
+    ----------
+    db_config : dict
+        データベースの接続設定
+
+    Returns
+    -------
+    list
+        ユーザーのリンクのリスト
+    """
+    user_links = execute_query(
+        query=f"""
+        SELECT user_link, MAX(agreements_count) AS max_agreements_count
+        FROM comments
+        WHERE agreements_count IS NOT NULL
+        GROUP BY user_link
+        ORDER BY max_agreements_count DESC
+        LIMIT {num}
+        """,
+        db_config=db_config,
+    )
+    return [user_link[0] for user_link in user_links]
+
+
 if __name__ == "__main__":
     db_config = {
         "host": "postgresql_db",
@@ -256,10 +284,12 @@ if __name__ == "__main__":
         "password": "1122",
         "port": "5432",
     }
-    url = "https://news.yahoo.co.jp/users/FfmNxkkKzQ_D2uVeBd-qX5XGevOzVjPrKPDsSbMLhI8VtwOC00"
-    max_comments = 10
-    # max_comments = 10
+    max_comments = 100
+    max_users = 10
 
-    result = get_and_save_articles_and_comments(db_config, url, max_comments)
-    print(result)
+    user_links = get_user_links_from_db(db_config, max_users)
+    for url in user_links:
+        get_and_save_articles_and_comments(db_config, url, max_comments)
+# %%
+user_links
 # %%
