@@ -343,18 +343,21 @@ def normalize_number(text: str) -> int:
         正規化後の数値
     """
 
-    # 1.3万、2.5千などの表記を変換
-    text = re.sub(
-        r"(\d+(\.\d+)?)万", lambda x: str(int(float(x.group(1)) * 10000)), text
-    )
-    text = re.sub(
-        r"(\d+(\.\d+)?)千", lambda x: str(int(float(x.group(1)) * 1000)), text
-    )
+    if text:
+        # 1.3万、2.5千などの表記を変換
+        text = re.sub(
+            r"(\d+(\.\d+)?)万", lambda x: str(int(float(x.group(1)) * 10000)), text
+        )
+        text = re.sub(
+            r"(\d+(\.\d+)?)千", lambda x: str(int(float(x.group(1)) * 1000)), text
+        )
 
-    # 1,234のようなカンマ区切りを削除
-    text = re.sub(r"(\d+),(\d+)", r"\1\2", text)
+        # 1,234のようなカンマ区切りを削除
+        text = re.sub(r"(\d+),(\d+)", r"\1\2", text)
 
-    # 単位（件、個など）を削除
-    text = re.sub(r"(\d+)(件|個|円|人|回|分|時間)?", r"\1", text)
+        # 単位（件、個など）を削除
+        text = re.sub(r"(\d+)(件|個|円|人|回|分|時間)?", r"\1", text)
 
-    return int(text)
+        return int(text)
+    else:
+        return 0
