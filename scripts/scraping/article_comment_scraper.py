@@ -14,7 +14,7 @@ from xpaths.xpath_article_comment_page import *
 
 sys.path.append(str(Path(__file__).parents[1]))
 
-import db_manager
+from db_manager import execute_query
 
 
 def get_total_comment_count(driver: webdriver) -> list[str]:
@@ -214,12 +214,12 @@ def get_article_comments(
             total_comment_count_without_reply
         )
 
-        db_manager.execute_query(
+        execute_query(
             f"UPDATE articles SET total_comment_count_with_reply = {total_comment_count_with_reply} WHERE article_id = {article_id}",
             db_config,
             commit=True,
         )
-        db_manager.execute_query(
+        execute_query(
             f"UPDATE articles SET total_comment_count_without_reply = {total_comment_count_without_reply} WHERE article_id = {article_id}",
             db_config,
             commit=True,
@@ -255,7 +255,7 @@ def get_article_comments(
                 # 一般コメントのIDをクラスに追加
                 try:
                     # 同じ記事に対して同じユーザーが同じコメントを投稿している場合は片方のみを取得
-                    general_comment.comment_id = db_manager.execute_query(
+                    general_comment.comment_id = execute_query(
                         f"""
                         SELECT comment_id FROM comments WHERE article_id = {article_id} AND user_link = '{general_comment.user_link}' AND comment_content = '{general_comment.comment_content}'
                         """,
