@@ -95,6 +95,7 @@ def get_and_save_articles_and_comments(
 
         # コメントセクションごとに処理
         for comment_section in comment_sections:
+            next_is_reply_comment = False
             for block in comment_section.find_elements(By.XPATH, "article"):
                 # 記事
                 if block.find_elements(By.XPATH, "a"):
@@ -110,6 +111,15 @@ def get_and_save_articles_and_comments(
                     )
                     article.save_data("articles", db_config)
 
+                    article.article_id = execute_query(
+                        query=f"""
+                        SELECT article_id
+                        FROM articles
+                        WHERE article_link = '{article.article_link}'
+                        """,
+                        db_config=db_config,
+                    )[0][0]
+
                 # 記事に対するコメント
                 elif block.find_elements(By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COUNT):
                     comment = DBBase()
@@ -121,12 +131,13 @@ def get_and_save_articles_and_comments(
                             {
                                 "posted_time": RELATIVE_XPATH_COMMENT_POSTED_TIME_1,
                                 "comment_content": RELATIVE_XPATH_COMMENT_TEXT,
-                                "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS,
-                                "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS,
-                                "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS,
+                                "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS_1,
+                                "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS_1,
+                                "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS_1,
                                 "reply_count": RELATIVE_XPATH_COMMENT_REPLY_COUNT,
                             },
                         )
+                        comment.article_id = article.article_id
                         comment.save_data("comments", db_config)
 
                     except:
@@ -143,12 +154,14 @@ def get_and_save_articles_and_comments(
                             {
                                 "posted_time": RELATIVE_XPATH_COMMENT_POSTED_TIME_2,
                                 "comment_content": RELATIVE_XPATH_COMMENT_TEXT,
-                                "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS,
-                                "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS,
-                                "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS,
+                                "agreements_count": RELATIVE_XPATH_COMMENT_AGREEMENTS_2,
+                                "acknowledgements_count": RELATIVE_XPATH_COMMENT_ACKNOWLEDGEMENTS_2,
+                                "disagreements_count": RELATIVE_XPATH_COMMENT_DISAGREEMENTS_2,
                             },
                         )
+                        comment.article_id = article.article_id
                         comment.save_data("comments", db_config)
+
                         comment_id = execute_query(
                             query=f"""
                             SELECT comment_id
@@ -158,7 +171,10 @@ def get_and_save_articles_and_comments(
                             """,
                             db_config=db_config,
                         )[0][0]
-                        comment_ids.append(comment_id)
+
+                        if next_is_reply_comment:
+                            comment_ids.append(comment_id)
+                            next_is_reply_comment = False
 
                     except:
                         pass
@@ -171,31 +187,55 @@ def get_and_save_articles_and_comments(
                         By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COMMENT_LINK
                     ).get_attribute("href")
                     reply_comment_links.append(reply_comment_link)
+                    next_is_reply_comment = True
 
                 # 削除されたコメント
                 elif block.find_elements(
                     By.XPATH, RELATIVE_XPATH_COMMENT_REPLY_COMMENT_TEXT
                 ):
-                    print("削除されたコメント")
+                    pass
 
         for reply_comment_link, comment_id in zip(reply_comment_links, comment_ids):
-            driver.get(reply_comment_link)
-            element = driver.find_element(By.XPATH, XPATH_REPLY_COMMENT_SECTION)
+            try:
+                driver.get(reply_comment_link)
+                element = driver.find_element(By.XPATH, XPATH_REPLY_COMMENT_SECTION)
 
-            reply_comment = DBBase()
-            reply_comment.get_info(
-                element,
-                {
-                    "username": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
-                    "user_link": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
-                    "posted_time": RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME,
-                    "comment_content": RELATIVE_XPATH_REPLY_COMMENT_TEXT,
-                    "agreements_count": RELATIVE_XPATH_REPLY_COMMENT_AGREEMENTS,
-                    "acknowledgements_count": RELATIVE_XPATH_REPLY_COMMENT_ACKNOWLEDGEMENTS,
-                    "disagreements_count": RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS,
-                },
-            )
-            reply_comment.save_data("comments", db_config)
+                reply_comment = DBBase()
+                reply_comment.get_info(
+                    element,
+                    {
+                        "username": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
+                        "user_link": RELATIVE_XPATH_REPLY_COMMENT_USERNAME,
+                        "posted_time": RELATIVE_XPATH_REPLY_COMMENT_POSTED_TIME,
+                        "comment_content": RELATIVE_XPATH_REPLY_COMMENT_TEXT,
+                        "agreements_count": RELATIVE_XPATH_REPLY_COMMENT_AGREEMENTS,
+                        "acknowledgements_count": RELATIVE_XPATH_REPLY_COMMENT_ACKNOWLEDGEMENTS,
+                        "disagreements_count": RELATIVE_XPATH_REPLY_COMMENT_DISAGREEMENTS,
+                    },
+                )
+                reply_comment.article_id = article.article_id
+                reply_comment.save_data("comments", db_config)
+
+                reply_comment_id = execute_query(
+                    query=f"""
+                    SELECT comment_id
+                    FROM comments
+                    WHERE user_link = '{reply_comment.user_link}'
+                    AND comment_content = '{reply_comment.comment_content}'
+                    """,
+                    db_config=db_config,
+                )[0][0]
+                execute_query(
+                    query=f"""
+                    UPDATE comments
+                    SET parent_comment_id = {comment_id}
+                    WHERE comment_id = {reply_comment_id}                    
+                    """,
+                    db_config=db_config,
+                    commit=True,
+                )
+            except:
+                pass
 
     finally:
         driver.quit()
@@ -209,8 +249,8 @@ if __name__ == "__main__":
         "password": "1122",
         "port": "5432",
     }
-    url = "https://news.yahoo.co.jp/users/eHCBfsjEFqRmy5UU44f-zPcdHpQ2j3hufgh5-VsS1Qx4Pg8600"
-    max_comments = 20
+    url = "https://news.yahoo.co.jp/users/FfmNxkkKzQ_D2uVeBd-qX5XGevOzVjPrKPDsSbMLhI8VtwOC00"
+    max_comments = 10
     # max_comments = 10
 
     result = get_and_save_articles_and_comments(db_config, url, max_comments)
