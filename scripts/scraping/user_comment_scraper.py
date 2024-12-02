@@ -110,7 +110,6 @@ def get_and_save_articles_and_comments(
                         },
                     )
                     article.save_data("articles", db_config)
-
                     article.article_id = execute_query(
                         query=f"""
                         SELECT article_id
@@ -139,7 +138,6 @@ def get_and_save_articles_and_comments(
                         )
                         comment.article_id = article.article_id
                         comment.save_data("comments", db_config)
-
                     except:
                         pass
 
@@ -243,6 +241,9 @@ def get_and_save_articles_and_comments(
                 )
             except:
                 pass
+
+    except:
+        pass
 
     finally:
         driver.quit()
