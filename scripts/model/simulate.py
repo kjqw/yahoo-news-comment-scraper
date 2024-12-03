@@ -16,39 +16,48 @@ sys.path.append(str(Path(__file__).parents[1]))
 
 from db_manager import execute_query
 
-# %%
-# 定数の定義
-user_num = 3  # ユーザー数
-article_num = 2  # 記事数
-state_dim = 4  # 状態ベクトルの次元数
-k_max = 50  # シミュレーションの時刻の最大値
-identifier = 1  # メタ情報が同じ時に区別するための識別子
-db_config = {
-    "host": "postgresql_db",
-    "database": "test_db",
-    "user": "kjqw",
-    "password": "1122",
-    "port": "5432",
-}  # データベースの接続設定
-init_sql_path = (
-    Path(__file__).parent / "init.sql"
-)  # テーブルの初期化用SQLファイルのパス
 
 # %%
-# ノードのインスタンスを生成。ランダムに初期値や重み行列が設定される
-nodes = utils.Nodes(article_num, user_num, state_dim, k_max, identifier)
-# ノードの親子関係をランダムに生成
-nodes.generate_random_nodes(state_dim)
-# 状態ベクトルを更新
-nodes.update_all_states()
+def main(
+    user_num: int,
+    article_num: int,
+    state_dim: int,
+    k_max: int,
+    identifier: int,
+    db_config: dict,
+    init_sql_path: Path,
+):
+    # ノードのインスタンスを生成。ランダムに初期値や重み行列が設定される
+    nodes = utils.Nodes(article_num, user_num, state_dim, k_max, identifier)
+    # ノードの親子関係をランダムに生成
+    nodes.generate_random_nodes(state_dim)
+    # 状態ベクトルを更新
+    nodes.update_all_states()
+
+    # データベースの初期化
+    with init_sql_path.open() as f:
+        init_sql = f.read()
+    execute_query(init_sql, db_config, commit=True)
+
+    # データベースにノードの情報を保存
+    nodes.save_to_db(db_config)
+
 
 # %%
-# データベースの初期化
-with init_sql_path.open() as f:
-    init_sql = f.read()
-execute_query(init_sql, db_config, commit=True)
-
-# %%
-# データベースにノードの情報を保存
-nodes.save_to_db(db_config)
-# %%
+if __name__ == "__main__":
+    # 定数の定義
+    user_num = 3  # ユーザー数
+    article_num = 2  # 記事数
+    state_dim = 4  # 状態ベクトルの次元数
+    k_max = 50  # シミュレーションの時刻の最大値
+    identifier = 1  # メタ情報が同じ時に区別するための識別子
+    db_config = {
+        "host": "postgresql_db",
+        "database": "test_db",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    }  # データベースの接続設定
+    init_sql_path = (
+        Path(__file__).parent / "init.sql"
+    )  # テーブルの初期化用SQLファイルのパス
