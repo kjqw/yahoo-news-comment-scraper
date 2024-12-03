@@ -14,7 +14,7 @@ import utils
 
 sys.path.append(str(Path(__file__).parents[1]))
 
-import db_manager
+from db_manager import execute_query
 
 # %%
 # 定数の定義
@@ -46,7 +46,7 @@ nodes.update_all_states()
 # データベースの初期化
 with init_sql_path.open() as f:
     init_sql = f.read()
-db_manager.execute_query(init_sql, db_config, commit=True)
+execute_query(init_sql, db_config, commit=True)
 
 # %%
 # データベースにノードの情報を保存
