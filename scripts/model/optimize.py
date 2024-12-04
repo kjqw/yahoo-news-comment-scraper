@@ -221,8 +221,11 @@ def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
             + W_s @ previous_state
             + b
         )
+        discrete_pred_state = np.where(
+            pred_state > 0.5, 1, np.where(pred_state < -0.5, -1, 0)
+        )
         # ノルムで損失を加算
-        loss += np.linalg.norm(state - pred_state)
+        loss += np.linalg.norm(state - discrete_pred_state)
 
     return loss
 
