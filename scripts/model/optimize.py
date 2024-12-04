@@ -7,64 +7,85 @@ import numpy as np
 import pandas as pd
 import utils
 from scipy.optimize import minimize
+from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parents[1]))
 
 from db_manager import execute_query
 
-# %%
-# データベースの接続設定を指定
-db_config = {
-    "host": "postgresql_db",
-    "database": "test_db",
-    "user": "kjqw",
-    "password": "1122",
-    "port": "5432",
-}
-# metadata_id = 2
-metadata_id = execute_query(
+
+def set_matadata_id(db_config: dict, metadata_id: int | None = None) -> int:
     """
-    SELECT metadata_id
-    FROM metadata
-    ORDER BY metadata_id DESC
-    LIMIT 1
-    """,
-    db_config,
-)[0][0]
+    メタデータIDを設定する関数。
+
+    Parameters
+    ----------
+    db_config : dict
+        データベースの接続設定。
+    metadata_id : int
+        メタデータID。
+
+    Returns
+    -------
+    int
+        メタデータID。
+    """
+    # metadata_idが指定されていない場合、最新のmetadata_idを取得
+    if metadata_id is None:
+        metadata_id = execute_query(
+            """
+            SELECT metadata_id
+            FROM metadata
+            ORDER BY metadata_id DESC
+            LIMIT 1
+            """,
+            db_config,
+        )[0][0]
+
+    return metadata_id
+
 
 # %%
-# データベースから"nodes"テーブルの全データを取得するクエリ
-query = f"SELECT * FROM nodes WHERE metadata_id = {metadata_id};"
+def format_df(db_config: dict) -> pd.DataFrame:
+    """
+    データベースから取得したデータを整形する関数。
 
-# クエリを実行してデータを取得
-data = execute_query(query, db_config)
+    Parameters
+    ----------
+    db_config : dict
+        データベースの接続設定。
 
-# %%
-# "nodes"テーブルのカラム名を取得するクエリ
-query = """
-SELECT column_name
-FROM information_schema.columns
-WHERE table_name = 'nodes'
-ORDER BY ordinal_position;
-"""
+    Returns
+    -------
+    pd.DataFrame
+        整形されたデータフレーム。
+    """
+    # データベースから"nodes"テーブルの全データを取得する
+    data = execute_query(
+        f"""
+        SELECT *
+        FROM nodes
+        WHERE metadata_id = {metadata_id};
+        """,
+        db_config,
+    )
 
-# クエリを実行してカラム名のリストを取得
-columns = execute_query(query, db_config)
+    # "nodes"テーブルのカラム名を取得する
+    columns = execute_query(
+        f"""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'nodes'
+        ORDER BY ordinal_position;
+        """,
+        db_config,
+    )
+    columns = [column[0] for column in columns]
 
-# カラム名を整える
-columns = [column[0] for column in columns]
+    # データをデータフレームとして読み込む
+    df = pd.DataFrame(data, columns=columns)
 
-# %%
-# 取得したカラム名を確認
-columns
-
-# %%
-# データをデータフレームとして読み込む
-df_data = pd.DataFrame(data, columns=columns)
-
-# %%
-# データフレームの内容を表示
-df_data
+    return df
 
 
 # %%
@@ -157,17 +178,6 @@ def _get_parent_state_strength(df, node_id, k) -> tuple[np.ndarray, float]:
         "strength"
     ].values[0]
     return parent_state, parent_strength
-
-
-# 訓練データを生成
-training_data = generate_training_data(df_data)
-
-# %%
-# 記事数、ユーザー数、状態の次元、および最大k値を取得
-article_num = df_data[df_data["node_type"] == "article"]["node_id"].nunique()
-user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
-state_dim = df_data["state_dim"].values[0]
-k_max = df_data["k"].max()
 
 
 # %%
@@ -264,7 +274,7 @@ def optimize_params(data: dict, user_id: int, epochs: int = 5) -> np.ndarray:
     initial_params = np.random.rand(3 * state_dim**2 + state_dim)
 
     # エポック数分の最適化を実行
-    for _ in range(epochs):
+    for _ in tqdm(range(epochs)):
         res = minimize(loss_function, initial_params, args=(data, user_id))
         initial_params = res.x  # 最適化結果を初期パラメータとして更新
 
@@ -321,11 +331,34 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
 
 
 # %%
-# 最適化の対象とするユーザーIDを指定し、最適化を実行
-for user_id in range(article_num, article_num + user_num):
-    params = optimize_params(training_data, user_id)
-    save_params(params, user_id, db_config)
+if __name__ == "__main__":
+    # データベースの接続設定を指定
+    db_config = {
+        "host": "postgresql_db",
+        "database": "test_db",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    }
 
-# %%
-utils.get_params(article_num, metadata_id, db_config)
+    # メタデータIDを設定
+    metadata_id = None
+    metadata_id = set_matadata_id(db_config, metadata_id)
+
+    # 訓練データを生成
+    df_data = format_df(db_config)
+    training_data = generate_training_data(df_data)
+
+    # 記事数、ユーザー数、状態の次元、および最大k値を取得
+    article_num = df_data[df_data["node_type"] == "article"]["node_id"].nunique()
+    user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
+    state_dim = df_data["state_dim"].values[0]
+    k_max = df_data["k"].max()
+
+    # 最適化の対象とするユーザーIDを指定し、最適化を実行
+    for user_id in range(article_num, article_num + user_num):
+        params = optimize_params(training_data, user_id)
+        save_params(params, user_id, db_config)
+
+    # utils.get_params(article_num, metadata_id, db_config)
 # %%
