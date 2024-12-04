@@ -76,7 +76,10 @@ def get_plot_data(
 # %%
 # プロット設定
 def plot_result(
-    true_states_plot_data: np.ndarray, pred_states_plot_data: np.ndarray
+    true_states_plot_data: np.ndarray,
+    pred_states_plot_data: np.ndarray,
+    state_dim: int,
+    k_max: int,
 ) -> plt.Figure:
     sns.set(style="darkgrid")
     fig, axes = plt.subplots(state_dim, 1, figsize=(10, state_dim * 2.5), sharex=True)
@@ -133,34 +136,29 @@ def plot_result(
     return fig
 
 
-# %%
-if __name__ == "__main__":
-    # データベースの接続設定を指定
-    db_config = {
-        "host": "postgresql_db",
-        "database": "test_db",
-        "user": "kjqw",
-        "password": "1122",
-        "port": "5432",
-    }
-
-    metadata_id = None
-    metadata_id = utils.set_matadata_id(db_config, metadata_id)
-
-    article_num, user_num, state_dim, k_max, add_noise, is_discrete = execute_query(
-        f"""
-        SELECT article_num, user_num, state_dim, k_max, add_noise, is_discrete
+def main(
+    metadata_id: int,
+    db_config: dict,
+) -> list[plt.Figure]:
+    # 変数の取得
+    article_num, user_num, state_dim, k_max, add_noise, is_discrete, identifier = (
+        execute_query(
+            f"""
+        SELECT article_num, user_num, state_dim, k_max, add_noise, is_discrete, identifier
         FROM metadata
         WHERE metadata_id = {metadata_id}
         """,
-        db_config,
-    )[0]
+            db_config,
+        )[0]
+    )
 
+    # パラメータの取得
     weights = [
         utils.get_params(i, metadata_id, db_config)
         for i in range(article_num, article_num + user_num)
     ]
 
+    # 真の状態の取得
     true_states = {
         i: [
             np.array(j[0])
@@ -176,6 +174,7 @@ if __name__ == "__main__":
         for i in range(article_num, article_num + user_num)
     }
 
+    # 予測状態の計算
     pred_states = calculate_pred_states(
         db_config,
         article_num,
@@ -189,11 +188,37 @@ if __name__ == "__main__":
         true_states,
     )
 
-    true_states_plot_data, pred_states_plot_data = get_plot_data(
-        true_states, pred_states, article_num + 2
-    )
+    figs = []
+    for user_id in range(article_num, article_num + user_num):
+        # プロットデータの取得
+        true_states_plot_data, pred_states_plot_data = get_plot_data(
+            true_states, pred_states, user_id
+        )
 
-    fig = plot_result(true_states_plot_data, pred_states_plot_data)
+        # プロット
+        fig = plot_result(
+            true_states_plot_data, pred_states_plot_data, state_dim, k_max
+        )
+        figs.append(fig)
+
+    return figs
+
+
+# %%
+if __name__ == "__main__":
+    # データベースの接続設定を指定
+    db_config = {
+        "host": "postgresql_db",
+        "database": "test_db",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    }
+
+    metadata_id = None
+    metadata_id = utils.set_matadata_id(db_config, metadata_id)
+
+    figs = main(metadata_id, db_config)
 
     # # 保存
     # fig_path = Path(__file__).parent / f"data/figs/sample_{metadata_id}.png"
