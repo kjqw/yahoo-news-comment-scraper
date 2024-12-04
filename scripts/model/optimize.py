@@ -7,64 +7,56 @@ import numpy as np
 import pandas as pd
 import utils
 from scipy.optimize import minimize
+from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parents[1]))
 
 from db_manager import execute_query
 
+
 # %%
-# データベースの接続設定を指定
-db_config = {
-    "host": "postgresql_db",
-    "database": "test_db",
-    "user": "kjqw",
-    "password": "1122",
-    "port": "5432",
-}
-# metadata_id = 2
-metadata_id = execute_query(
+def format_df(db_config: dict, metadata_id: int) -> pd.DataFrame:
     """
-    SELECT metadata_id
-    FROM metadata
-    ORDER BY metadata_id DESC
-    LIMIT 1
-    """,
-    db_config,
-)[0][0]
+    データベースから取得したデータを整形する関数。
 
-# %%
-# データベースから"nodes"テーブルの全データを取得するクエリ
-query = f"SELECT * FROM nodes WHERE metadata_id = {metadata_id};"
+    Parameters
+    ----------
+    db_config : dict
+        データベースの接続設定。
+    metadata_id : int
+        メタデータID。
 
-# クエリを実行してデータを取得
-data = execute_query(query, db_config)
+    Returns
+    -------
+    pd.DataFrame
+        整形されたデータフレーム。
+    """
+    # データベースから"nodes"テーブルの全データを取得する
+    data = execute_query(
+        f"""
+        SELECT *
+        FROM nodes
+        WHERE metadata_id = {metadata_id};
+        """,
+        db_config,
+    )
 
-# %%
-# "nodes"テーブルのカラム名を取得するクエリ
-query = """
-SELECT column_name
-FROM information_schema.columns
-WHERE table_name = 'nodes'
-ORDER BY ordinal_position;
-"""
+    # "nodes"テーブルのカラム名を取得する
+    columns = execute_query(
+        f"""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'nodes'
+        ORDER BY ordinal_position;
+        """,
+        db_config,
+    )
+    columns = [column[0] for column in columns]
 
-# クエリを実行してカラム名のリストを取得
-columns = execute_query(query, db_config)
+    # データをデータフレームとして読み込む
+    df = pd.DataFrame(data, columns=columns)
 
-# カラム名を整える
-columns = [column[0] for column in columns]
-
-# %%
-# 取得したカラム名を確認
-columns
-
-# %%
-# データをデータフレームとして読み込む
-df_data = pd.DataFrame(data, columns=columns)
-
-# %%
-# データフレームの内容を表示
-df_data
+    return df
 
 
 # %%
@@ -159,19 +151,14 @@ def _get_parent_state_strength(df, node_id, k) -> tuple[np.ndarray, float]:
     return parent_state, parent_strength
 
 
-# 訓練データを生成
-training_data = generate_training_data(df_data)
-
 # %%
-# 記事数、ユーザー数、状態の次元、および最大k値を取得
-article_num = df_data[df_data["node_type"] == "article"]["node_id"].nunique()
-user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
-state_dim = df_data["state_dim"].values[0]
-k_max = df_data["k"].max()
-
-
-# %%
-def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
+def loss_function(
+    params: np.ndarray,
+    data: dict,
+    state_dim: int,
+    user_id: int,
+    is_discrete: bool,
+) -> float:
     """
     損失関数を計算する。
 
@@ -190,7 +177,7 @@ def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
         損失の値。
     """
     # パラメータをリシェイプして取得
-    W_p, W_q, W_s, b = _reshape_params(params)
+    W_p, W_q, W_s, b = _reshape_params(params, state_dim)
 
     # 損失を初期化
     loss = 0
@@ -211,14 +198,23 @@ def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
             + W_s @ previous_state
             + b
         )
-        # ノルムで損失を加算
-        loss += np.linalg.norm(state - pred_state)
+        if is_discrete:
+            # 予測状態を離散化
+            discrete_pred_state = np.where(
+                pred_state > 0.5, 1, np.where(pred_state < -0.5, -1, 0)
+            )
+            # ノルムで損失を加算
+            loss += np.linalg.norm(state - discrete_pred_state)
+        else:
+            # 二乗和で損失を加算
+            loss += np.sum((state - pred_state) ** 2)
 
     return loss
 
 
 def _reshape_params(
     params: np.ndarray,
+    state_dim: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     パラメータをリシェイプして取得するヘルパー関数。
@@ -242,7 +238,13 @@ def _reshape_params(
 
 
 # %%
-def optimize_params(data: dict, user_id: int, epochs: int = 5) -> np.ndarray:
+def optimize_params(
+    data: dict,
+    state_dim: int,
+    user_id: int,
+    is_discrete: bool,
+    epochs: int = 5,
+) -> np.ndarray:
     """
     パラメータの最適化を行う関数。
 
@@ -264,14 +266,25 @@ def optimize_params(data: dict, user_id: int, epochs: int = 5) -> np.ndarray:
     initial_params = np.random.rand(3 * state_dim**2 + state_dim)
 
     # エポック数分の最適化を実行
-    for _ in range(epochs):
-        res = minimize(loss_function, initial_params, args=(data, user_id))
+    for _ in tqdm(range(epochs)):
+        res = minimize(
+            loss_function,
+            initial_params,
+            args=(
+                data,
+                state_dim,
+                user_id,
+                is_discrete,
+            ),
+        )
         initial_params = res.x  # 最適化結果を初期パラメータとして更新
 
     return initial_params
 
 
-def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
+def save_params(
+    params: np.ndarray, state_dim: int, user_id: int, metadata_id: int, db_config: dict
+):
     """
     パラメータをデータベースに保存する関数。
 
@@ -281,11 +294,13 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
         パラメータ。
     user_id : int
         ユーザーID。
+    metadata_id : int
+        メタデータID。
     db_config : dict
         データベースの接続設定。
     """
     # パラメータをリシェイプ
-    W_p, W_q, W_s, b = _reshape_params(params)
+    W_p, W_q, W_s, b = _reshape_params(params, state_dim)
     W_p_str = utils.ndarray_to_ARRAY(W_p)
     W_q_str = utils.ndarray_to_ARRAY(W_q)
     W_s_str = utils.ndarray_to_ARRAY(W_s)
@@ -320,12 +335,45 @@ def save_params(params: np.ndarray, user_id: int, db_config: dict) -> None:
     )
 
 
-# %%
-# 最適化の対象とするユーザーIDを指定し、最適化を実行
-for user_id in range(article_num, article_num + user_num):
-    params = optimize_params(training_data, user_id)
-    save_params(params, user_id, db_config)
+def main(metadata_id: int, db_config: dict):
+    # 記事数、ユーザー数、状態の次元数、離散値かどうかを取得
+    article_num, user_num, state_dim, is_discrete = execute_query(
+        f"""
+        SELECT article_num, user_num, state_dim, is_discrete
+        FROM metadata
+        WHERE metadata_id = {metadata_id}
+        """,
+        db_config,
+    )[0]
+
+    # データベースから取得したデータを整形
+    df_data = format_df(db_config, metadata_id)
+
+    # 訓練データを生成
+    training_data = generate_training_data(df_data)
+
+    # 最適化を実行
+    for user_id in range(article_num, article_num + user_num):
+        params = optimize_params(training_data, state_dim, user_id, is_discrete)
+        save_params(params, state_dim, user_id, metadata_id, db_config)
+
 
 # %%
-utils.get_params(article_num, metadata_id, db_config)
+if __name__ == "__main__":
+    # データベースの接続設定を指定
+    db_config = {
+        "host": "postgresql_db",
+        "database": "test_db",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    }
+
+    # メタデータIDを設定
+    metadata_id = None
+    metadata_id = utils.set_matadata_id(db_config, metadata_id)
+
+    # メイン処理
+    main(metadata_id, db_config)
+
 # %%
