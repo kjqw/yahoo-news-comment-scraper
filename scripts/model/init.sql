@@ -4,12 +4,18 @@ CREATE TABLE IF NOT EXISTS metadata (
     user_num INTEGER, -- ユーザー数
     state_dim INTEGER, -- 状態ベクトルの次元
     k_max INTEGER, -- 最大時刻
+    identifier INTEGER, -- 識別子
+    add_noise BOOLEAN, -- ノイズを加えるかどうか
+    is_discrete BOOLEAN, -- 状態ベクトルが離散値かどうか
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- タイムスタンプ
     UNIQUE (
         article_num,
         user_num,
         state_dim,
-        k_max
+        k_max,
+        identifier,
+        add_noise,
+        is_discrete
     )
 );
 
