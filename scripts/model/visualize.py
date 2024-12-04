@@ -131,7 +131,6 @@ def plot_result(
 
     # レイアウト調整
     plt.tight_layout()
-    # plt.show()
 
     return fig
 
@@ -200,6 +199,7 @@ def main(
             true_states_plot_data, pred_states_plot_data, state_dim, k_max
         )
         figs.append(fig)
+        plt.close()
 
     return figs
 
