@@ -61,3 +61,8 @@ if __name__ == "__main__":
     init_sql_path = (
         Path(__file__).parent / "init.sql"
     )  # テーブルの初期化用SQLファイルのパス
+
+    # メイン処理
+    main(user_num, article_num, state_dim, k_max, identifier, db_config, init_sql_path)
+
+# %%
