@@ -235,7 +235,7 @@ def optimize_params(
     user_id: int,
     is_discrete: bool,
     epochs: int = 1000,
-    batch_size: int = 16,
+    batch_size: int = 32,
 ):
     """
     パラメータを最適化する関数。
@@ -251,9 +251,9 @@ def optimize_params(
     is_discrete : bool
         離散化するかどうか。
     epochs : int, optional
-        エポック数 (デフォルトは5)。
+        エポック数 (デフォルトは1000)。
     batch_size : int, optional
-        バッチサイズ (デフォルトは16)。
+        バッチサイズ (デフォルトは32)。
 
     Returns
     -------
