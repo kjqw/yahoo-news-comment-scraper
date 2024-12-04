@@ -203,10 +203,8 @@ def loss_function(
             discrete_pred_state = np.where(
                 pred_state > 0.5, 1, np.where(pred_state < -0.5, -1, 0)
             )
-            # ノルムで損失を加算
-            loss += np.linalg.norm(state - discrete_pred_state)
+            loss += np.sum((state - discrete_pred_state) ** 2)
         else:
-            # 二乗和で損失を加算
             loss += np.sum((state - pred_state) ** 2)
 
     return loss
