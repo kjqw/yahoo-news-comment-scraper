@@ -353,10 +353,14 @@ if __name__ == "__main__":
     training_data = generate_training_data(df_data)
 
     # 記事数、ユーザー数、状態の次元、および最大k値を取得
-    article_num = df_data[df_data["node_type"] == "article"]["node_id"].nunique()
-    user_num = df_data[df_data["node_type"] == "user"]["node_id"].nunique()
-    state_dim = df_data["state_dim"].values[0]
-    k_max = df_data["k"].max()
+    article_num, user_num, state_dim, k_max = execute_query(
+        f"""
+        SELECT article_num, user_num, state_dim, k_max
+        FROM metadata
+        WHERE metadata_id = {metadata_id}
+        """,
+        db_config,
+    )[0]
 
     # 最適化の対象とするユーザーIDを指定し、最適化を実行
     for user_id in range(article_num, article_num + user_num):
