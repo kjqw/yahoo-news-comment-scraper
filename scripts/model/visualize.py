@@ -219,6 +219,8 @@ if __name__ == "__main__":
     metadata_id = utils.set_matadata_id(db_config, metadata_id)
 
     figs = main(metadata_id, db_config)
+    for i, fig in enumerate(figs):
+        fig.savefig(f"fig_{i}.png")
 
     # # 保存
     # fig_path = Path(__file__).parent / f"data/figs/sample_{metadata_id}.png"
