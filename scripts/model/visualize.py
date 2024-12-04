@@ -48,7 +48,7 @@ def calculate_pred_states(
                 print("親ノードは2つ以上存在することはありません。")
             pred_states[user_id].append(
                 utils.update_method(
-                    pred_states[user_id][-1],
+                    true_states[user_id][-1],
                     W_p,
                     state_parent_article,
                     strength_parent_article,
@@ -93,7 +93,7 @@ def plot_result(
             marker="o",
             color="blue",
             ax=axes[dim],
-            legend=False if dim < state_dim - 1 else True,  # 最後のaxのみlegend表示
+            legend=True if dim == 0 else False,
         )
         sns.lineplot(
             x=range(k_max + 1),
@@ -101,27 +101,28 @@ def plot_result(
             label="True",
             color="blue",
             ax=axes[dim],
-            legend=False if dim < state_dim - 1 else True,
+            legend=True if dim == 0 else False,
         )
         # Predの散布図と折れ線
-        sns.scatterplot(
-            x=range(k_max + 1),
-            y=pred_state,
-            label="Pred",
-            marker="x",
-            color="red",
-            ax=axes[dim],
-            legend=False if dim < state_dim - 1 else True,
-        )
-        sns.lineplot(
-            x=range(k_max + 1),
-            y=pred_state,
-            label="Pred",
-            color="red",
-            linestyle="--",
-            ax=axes[dim],
-            legend=False if dim < state_dim - 1 else True,
-        )
+        for k in range(k_max):
+            sns.scatterplot(
+                x=[k, k + 1],
+                y=[true_state[k], pred_state[k + 1]],
+                label="Pred",
+                marker="x",
+                color="red",
+                ax=axes[dim],
+                legend=True if dim == 0 and k == 0 else False,
+            )
+            sns.lineplot(
+                x=[k, k + 1],
+                y=[true_state[k], pred_state[k + 1]],
+                label="Pred",
+                color="red",
+                linestyle="--",
+                ax=axes[dim],
+                legend=True if dim == 0 and k == 0 else False,
+            )
 
         axes[dim].set_title(f"Dimension {dim + 1}")
 
