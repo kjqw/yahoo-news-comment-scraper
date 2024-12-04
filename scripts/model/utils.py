@@ -101,11 +101,14 @@ class UserCommentNode(Node):
     def update_state(
         self,
         add_noise: bool = True,
+        is_discrete: bool = True,
     ) -> None:
         """
         親ノードの状態に基づき、ユーザーコメントノードの状態を更新するメソッド。
         add_noise : bool, Optional
             ノイズを加えるかどうか
+        is_discrete : bool, Optional
+            離散化処理を行うかどうか
         """
         # 指定があればノイズを加える
         noise = (
@@ -153,6 +156,7 @@ class UserCommentNode(Node):
             self.bias,
             self.state_dim,
             add_noise,
+            is_discrete,
         )
 
         # 新しい状態と影響度を保存
@@ -185,6 +189,8 @@ class Nodes:
         state_dim: int,
         k_max: int,
         identifier: int = 1,
+        add_noise: bool = True,
+        is_discrete: bool = True,
     ):
         self.article_num = article_num
         self.user_num = user_num
@@ -193,6 +199,8 @@ class Nodes:
         self.article_nodes = {}  # 記事ノードの辞書
         self.k_max = k_max
         self.identifier = identifier
+        self.add_noise = add_noise
+        self.is_discrete = is_discrete
 
     def generate_random_nodes(self, state_dim: int) -> None:
         """
@@ -242,7 +250,9 @@ class Nodes:
             sorted(self.article_nodes.items(), key=lambda x: x[0])
         )
 
-    def update_all_states(self) -> None:
+    def update_all_states(
+        self, add_noise: bool = True, is_discrete: bool = True
+    ) -> None:
         """
         全ユーザーコメントノードの状態を各時刻にわたって更新するメソッド。
         """
@@ -251,7 +261,7 @@ class Nodes:
             # 時刻順に状態を更新
             for k in range(1, self.k_max + 1):
                 user_node = self.user_nodes[user_id]
-                user_node.update_state()
+                user_node.update_state(add_noise, is_discrete)
 
     def generate_training_data(
         self,
@@ -346,8 +356,8 @@ class Nodes:
         """
         # メタデータを保存
         query = f"""
-        INSERT INTO metadata (article_num, user_num, state_dim, k_max, identifier)
-        VALUES ({self.article_num}, {self.user_num}, {self.state_dim}, {self.k_max}, {self.identifier});
+        INSERT INTO metadata (article_num, user_num, state_dim, k_max, identifier, add_noise, is_discrete)
+        VALUES ({self.article_num}, {self.user_num}, {self.state_dim}, {self.k_max}, {self.identifier}, {self.add_noise}, {self.is_discrete});
         """
         execute_query(query, db_config, commit=True)
         # メタデータのIDを取得
@@ -489,6 +499,7 @@ def update_method(
     b: np.ndarray,
     state_dim: int,
     add_noise: bool = True,
+    is_discrete: bool = True,
 ) -> np.ndarray:
     """
     ユーザーコメントノードの状態を更新するメソッド。
@@ -509,7 +520,40 @@ def update_method(
         + noise
     )
 
-    # 離散化処理
-    discrete_state = np.where(new_state > 0.5, 1, np.where(new_state < -0.5, -1, 0))
+    if is_discrete:
+        # 離散化処理
+        discrete_state = np.where(new_state > 0.5, 1, np.where(new_state < -0.5, -1, 0))
+        return discrete_state
+    else:
+        return new_state
 
-    return discrete_state
+
+def set_matadata_id(db_config: dict, metadata_id: int | None = None) -> int:
+    """
+    メタデータIDを設定する関数。
+
+    Parameters
+    ----------
+    db_config : dict
+        データベースの接続設定。
+    metadata_id : int
+        メタデータID。
+
+    Returns
+    -------
+    int
+        メタデータID。
+    """
+    # metadata_idが指定されていない場合、最新のmetadata_idを取得
+    if metadata_id is None:
+        metadata_id = execute_query(
+            """
+            SELECT metadata_id
+            FROM metadata
+            ORDER BY metadata_id DESC
+            LIMIT 1
+            """,
+            db_config,
+        )[0][0]
+
+    return metadata_id

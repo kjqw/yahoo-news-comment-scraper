@@ -14,37 +14,6 @@ sys.path.append(str(Path(__file__).parents[1]))
 from db_manager import execute_query
 
 
-def set_matadata_id(db_config: dict, metadata_id: int | None = None) -> int:
-    """
-    メタデータIDを設定する関数。
-
-    Parameters
-    ----------
-    db_config : dict
-        データベースの接続設定。
-    metadata_id : int
-        メタデータID。
-
-    Returns
-    -------
-    int
-        メタデータID。
-    """
-    # metadata_idが指定されていない場合、最新のmetadata_idを取得
-    if metadata_id is None:
-        metadata_id = execute_query(
-            """
-            SELECT metadata_id
-            FROM metadata
-            ORDER BY metadata_id DESC
-            LIMIT 1
-            """,
-            db_config,
-        )[0][0]
-
-    return metadata_id
-
-
 # %%
 def format_df(db_config: dict) -> pd.DataFrame:
     """
@@ -181,7 +150,9 @@ def _get_parent_state_strength(df, node_id, k) -> tuple[np.ndarray, float]:
 
 
 # %%
-def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
+def loss_function(
+    params: np.ndarray, data: dict, user_id: int, is_discrete: bool
+) -> float:
     """
     損失関数を計算する。
 
@@ -221,11 +192,16 @@ def loss_function(params: np.ndarray, data: dict, user_id: int) -> float:
             + W_s @ previous_state
             + b
         )
-        discrete_pred_state = np.where(
-            pred_state > 0.5, 1, np.where(pred_state < -0.5, -1, 0)
-        )
-        # ノルムで損失を加算
-        loss += np.linalg.norm(state - discrete_pred_state)
+        if is_discrete:
+            # 予測状態を離散化
+            discrete_pred_state = np.where(
+                pred_state > 0.5, 1, np.where(pred_state < -0.5, -1, 0)
+            )
+            # ノルムで損失を加算
+            loss += np.linalg.norm(state - discrete_pred_state)
+        else:
+            # 二乗和で損失を加算
+            loss += np.sum((state - pred_state) ** 2)
 
     return loss
 
@@ -255,7 +231,12 @@ def _reshape_params(
 
 
 # %%
-def optimize_params(data: dict, user_id: int, epochs: int = 5) -> np.ndarray:
+def optimize_params(
+    data: dict,
+    user_id: int,
+    is_discrete: bool,
+    epochs: int = 5,
+) -> np.ndarray:
     """
     パラメータの最適化を行う関数。
 
@@ -278,7 +259,7 @@ def optimize_params(data: dict, user_id: int, epochs: int = 5) -> np.ndarray:
 
     # エポック数分の最適化を実行
     for _ in tqdm(range(epochs)):
-        res = minimize(loss_function, initial_params, args=(data, user_id))
+        res = minimize(loss_function, initial_params, args=(data, user_id, is_discrete))
         initial_params = res.x  # 最適化結果を初期パラメータとして更新
 
     return initial_params
@@ -346,16 +327,16 @@ if __name__ == "__main__":
 
     # メタデータIDを設定
     metadata_id = None
-    metadata_id = set_matadata_id(db_config, metadata_id)
+    metadata_id = utils.set_matadata_id(db_config, metadata_id)
 
     # 訓練データを生成
     df_data = format_df(db_config)
     training_data = generate_training_data(df_data)
 
-    # 記事数、ユーザー数、状態の次元、および最大k値を取得
-    article_num, user_num, state_dim, k_max = execute_query(
+    # 記事数、ユーザー数、状態の次元数、最大時刻、ノイズの有無、離散値かどうかを取得
+    article_num, user_num, state_dim, k_max, add_noise, is_discrete = execute_query(
         f"""
-        SELECT article_num, user_num, state_dim, k_max
+        SELECT article_num, user_num, state_dim, k_max, add_noise, is_discrete
         FROM metadata
         WHERE metadata_id = {metadata_id}
         """,
@@ -364,7 +345,7 @@ if __name__ == "__main__":
 
     # 最適化の対象とするユーザーIDを指定し、最適化を実行
     for user_id in range(article_num, article_num + user_num):
-        params = optimize_params(training_data, user_id)
+        params = optimize_params(training_data, user_id, is_discrete)
         save_params(params, user_id, db_config)
 
     # utils.get_params(article_num, metadata_id, db_config)
