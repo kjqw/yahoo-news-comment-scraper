@@ -19,6 +19,8 @@ def calculate_pred_states(
     user_num: int,
     state_dim: int,
     k_max: int,
+    add_noise: bool,
+    is_discrete: bool,
     metadata_id: int,
     weights: list,
     true_states: dict,
@@ -56,7 +58,8 @@ def calculate_pred_states(
                     W_s,
                     b,
                     state_dim,
-                    add_noise=False,
+                    False,
+                    is_discrete,
                 )
             )
     return pred_states
@@ -143,9 +146,9 @@ if __name__ == "__main__":
     metadata_id = None
     metadata_id = utils.set_matadata_id(db_config, metadata_id)
 
-    article_num, user_num, state_dim, k_max = execute_query(
+    article_num, user_num, state_dim, k_max, add_noise, is_discrete = execute_query(
         f"""
-        SELECT article_num, user_num, state_dim, k_max
+        SELECT article_num, user_num, state_dim, k_max, add_noise, is_discrete
         FROM metadata
         WHERE metadata_id = {metadata_id}
         """,
@@ -178,6 +181,8 @@ if __name__ == "__main__":
         user_num,
         state_dim,
         k_max,
+        add_noise,
+        is_discrete,
         metadata_id,
         weights,
         true_states,
