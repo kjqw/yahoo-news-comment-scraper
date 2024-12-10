@@ -44,6 +44,9 @@ def get_and_save_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> 
             # データベースに保存
             article.save_data("articles")
 
+    except:
+        pass
+
     finally:
         driver.quit()
 
