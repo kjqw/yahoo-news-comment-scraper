@@ -128,6 +128,17 @@ def plot_result(
             )
 
         axes[dim].set_title(f"Dimension {dim + 1}")
+        axes[dim].set_xlim(-0.5, k_max + 0.5)  # x軸の範囲と余裕
+        axes[dim].set_ylim(-1.1, 1.1)  # y軸の範囲と余裕
+        axes[dim].xaxis.set_major_locator(
+            plt.MultipleLocator(5)
+        )  # x軸のグリッドを5刻みに
+
+    # y軸のラベルを中央に1つだけ追加
+    fig.text(0.005, 0.5, "State Values", va="center", rotation="vertical")
+
+    # x軸タイトルを設定
+    axes[-1].set_xlabel("Time Step")
 
     # レイアウト調整
     plt.tight_layout()
