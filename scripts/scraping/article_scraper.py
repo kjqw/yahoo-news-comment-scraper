@@ -5,14 +5,57 @@ from pathlib import Path
 import functions
 from classes import DBBase
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from xpaths.xpath_user_page import *
+from tqdm import tqdm
+from xpaths.xpath_article_page import *
 
 sys.path.append(str(Path(__file__).parents[1]))
 
 from db_manager import execute_query
+
+
+def get_and_save_articles(article_links: list[str], timeout: int = 10) -> None:
+    """
+    記事のリンクを入力して、記事の本文などの情報を取得する。
+    """
+    for article_link in tqdm(article_links):
+        try:
+            # ドライバを初期化
+            driver = functions.init_driver(timeout)
+
+            # ページを開く
+            driver.get(article_link)
+
+            article = DBBase()
+            article.article_link = article_link
+
+            article_section = driver.find_element(By.XPATH, XPATH_ARTICLE_SECTION)
+
+            # 記事の要素を取得
+            article.get_info(
+                article_section,
+                {
+                    "article_title": RELATIVE_XPATH_ARTICLE_TITLE,
+                    "author": RELATIVE_XPATH_ARTICLE_AUTHOR,
+                    "posted_time": RELATIVE_XPATH_ARTICLE_POSTED_TIME,
+                    "updated_time": RELATIVE_XPATH_ARTICLE_UPDATED_TIME,
+                    "total_comment_count_with_reply": RELATIVE_XPATH_ARTICLE_COMMENT_COUNT,
+                    "article_content": RELATIVE_XPATH_ARTICLE_CONTENT,
+                    # "page_count": RELATIVE_XPATH_ARTICLE_PAGE_COUNT,
+                    "learn_count": RELATIVE_XPATH_ARTICLE_LERAN_COUNT,
+                    "clarity_count": RELATIVE_XPATH_ARTICLE_CLARITY_COUNT,
+                    "new_perspective_count": RELATIVE_XPATH_ARTICLE_NEW_PERSPECTIVE_COUNT,
+                },
+            )
+
+            # データベースに保存
+            article.update_data("articles")
+
+        except:
+            pass
+
+        finally:
+            driver.quit()
+
 
 if __name__ == "__main__":
     db_config = {
@@ -22,6 +65,7 @@ if __name__ == "__main__":
         "password": "1122",
         "port": "5432",
     }
+
     max_users = 10  # 投稿数が多い上位Nユーザーを取得
 
     # 投稿コメント数の多いユーザーを取得
@@ -49,20 +93,25 @@ if __name__ == "__main__":
     )
     print("Raw Article Data:", article_data)
 
-    # 辞書形式に整形
-    user_article_dict = {}
-    for user_link, article_id in article_data:
-        if user_link not in user_article_dict:
-            user_article_dict[user_link] = []
-        user_article_dict[user_link].append(article_id)
+    # 記事テーブルから記事のリンクを取得
+    # Noneを除外してクエリを実行
+    valid_article_ids = [str(data[1]) for data in article_data if data[1] is not None]
 
-    print("User to Articles Dictionary:", user_article_dict)
+    if valid_article_ids:  # 有効なIDが存在する場合のみクエリを実行
+        article_links = execute_query(
+            f"""
+            SELECT article_link
+            FROM articles
+            WHERE article_id IN ({','.join(valid_article_ids)})
+            """
+        )
+        article_links = [link[0] for link in article_links]
+    else:
+        article_links = []  # 有効なIDがなければ空リストを返す
 
-    # article_links = execute_query(
+    print("Article Links:", article_links)
 
+    # 記事のリンクを入力して、記事の本文などの情報を取得する。
+    get_and_save_articles(article_links)
 
-# %%
-n = 0
-print(len(user_article_dict[user_links[n][0]]))
-print(user_article_dict[user_links[n][0]])
 # %%
