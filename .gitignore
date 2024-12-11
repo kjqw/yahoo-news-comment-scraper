@@ -2,6 +2,7 @@ __pycache__/
 .venv/
 
 data/
+db_backups/
 db_data/
 html/
 orders/
