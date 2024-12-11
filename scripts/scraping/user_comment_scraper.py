@@ -165,7 +165,7 @@ def get_and_save_articles_and_comments(
                             SELECT comment_id
                             FROM comments
                             WHERE user_link = '{url}'
-                            AND comment_content = '{comment.comment_content}'
+                            AND comment_content = '{comment.comment_content}';
                             """,
                             db_config=db_config,
                         )[0][0]
