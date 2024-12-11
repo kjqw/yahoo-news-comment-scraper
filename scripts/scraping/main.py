@@ -12,6 +12,7 @@ from pathlib import Path
 
 import article_comment_scraper
 import article_link_scraper
+import article_scraper
 import user_comment_scraper
 from tqdm import tqdm
 
@@ -77,6 +78,7 @@ for article_id, article_comment_link in article_comment_links:
     )
 
 # %%
+# 各ユーザーのコメントを取得
 user_links = [
     i[0]
     for i in execute_query(
@@ -97,5 +99,50 @@ for user_link in tqdm(user_links):
         user_link,
         default_max_comments,
     )
+
+# %%
+# ユーザーが見た記事の情報を取得
+max_users = 10  # 投稿数が多い上位Nユーザーを取得
+
+# 投稿コメント数の多いユーザーを取得
+user_links = execute_query(
+    f"""
+    SELECT user_link
+    FROM users
+    WHERE total_comment_count IS NOT NULL
+    ORDER BY total_comment_count DESC
+    LIMIT {max_users}
+    """,
+)
+
+# 各ユーザーが見た全ての記事のリンクを取得
+user_links_list = [f"'{link[0]}'" for link in user_links]
+article_data = execute_query(
+    f"""
+    SELECT user_link, article_id
+    FROM comments
+    WHERE user_link IN ({','.join(user_links_list)})
+    GROUP BY user_link, article_id
+    ORDER BY user_link
+    """
+)
+
+# 記事テーブルから記事のリンクを取得
+# Noneを除外してクエリを実行
+valid_article_ids = [str(data[1]) for data in article_data if data[1] is not None]
+
+if valid_article_ids:  # 有効なIDが存在する場合のみクエリを実行
+    article_links = execute_query(
+        f"""
+        SELECT article_link
+        FROM articles
+        WHERE article_id IN ({','.join(valid_article_ids)})
+        """
+    )
+    article_links = [link[0] for link in article_links]
+else:
+    article_links = []  # 有効なIDがなければ空リストを返す
+
+article_scraper.get_and_save_articles(article_links)
 
 # %%
