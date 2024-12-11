@@ -121,6 +121,9 @@ class DBBase:
             "total_agreements_count",
             "total_acknowledgements_count",
             "total_disagreements_count",
+            "learn_count",
+            "clarity_count",
+            "new_perspective_count",
         ]
         for key in keys:
             # 属性が存在し、Noneではない場合に処理を実行
