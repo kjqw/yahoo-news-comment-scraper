@@ -45,6 +45,29 @@ class DBBase:
 
         db_manager.execute_query(query, db_config, commit=True)
 
+    def update_data(
+        self,
+        table_name: str,
+        db_config: dict = db_manager.DB_CONFIG,
+    ) -> None:
+        """
+        データベースのデータを更新する。
+
+        Parameters
+        ----------
+        table_name : str
+            データを保存するテーブルの名前。
+        db_config : dict[str, str]
+            データベース接続に必要な設定情報。
+        """
+        data = self.export_data()
+        columns = ", ".join(data.keys())
+        values = ", ".join([f"'{value}'" for value in data.values()])
+
+        query = f"UPDATE {table_name} SET ({columns}) = ({values}) WHERE article_link = '{self.article_link}'"
+
+        db_manager.execute_query(query, db_config, commit=True)
+
     def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
         """
         渡されたXPATHの辞書を用いて記事の情報を取得する。
@@ -98,6 +121,9 @@ class DBBase:
             "total_agreements_count",
             "total_acknowledgements_count",
             "total_disagreements_count",
+            "learn_count",
+            "clarity_count",
+            "new_perspective_count",
         ]
         for key in keys:
             # 属性が存在し、Noneではない場合に処理を実行

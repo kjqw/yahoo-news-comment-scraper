@@ -16,9 +16,15 @@ RELATIVE_XPATH_ARTICLE_CONTENT = "article/div[1]/div/p"
 RELATIVE_XPATH_ARTICLE_PAGE_COUNT = (
     "article/div[3]/div/p/span"  # ページ数が複数ある場合のみ存在
 )
-RELATIVE_XPATH_ARTICLE_LERAN_COUNT = "/article/div[3]/ul/li[1]/div/span"
+
+# RELATIVE_XPATH_ARTICLE_PAGE_COUNTがあるとき
+RELATIVE_XPATH_ARTICLE_LERAN_COUNT = "article/div[3]/ul/li[1]/div/span"
 RELATIVE_XPATH_ARTICLE_CLARITY_COUNT = "article/div[3]/ul/li[2]/div/span"
 RELATIVE_XPATH_ARTICLE_NEW_PERSPECTIVE_COUNT = "article/div[3]/ul/li[3]/div/span"
+# RELATIVE_XPATH_ARTICLE_PAGE_COUNTがないとき
+# RELATIVE_XPATH_ARTICLE_LERAN_COUNT = "article/div[4]/ul/li[1]/div/span"
+# RELATIVE_XPATH_ARTICLE_CLARITY_COUNT = "article/div[4]/ul/li[2]/div/span"
+# RELATIVE_XPATH_ARTICLE_NEW_PERSPECTIVE_COUNT = "article/div[4]/ul/li[3]/div/span"
 
 RELATIVE_XPATH_RELATED_ARTICLES = "article/section/ul/li/a"
 RELATIVE_XPATH_READ_ALSO_ARTICLE = "aside/div/ul/li/a"

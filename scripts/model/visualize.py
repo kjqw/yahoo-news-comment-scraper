@@ -128,10 +128,20 @@ def plot_result(
             )
 
         axes[dim].set_title(f"Dimension {dim + 1}")
+        axes[dim].set_xlim(-0.5, k_max + 0.5)  # x軸の範囲と余裕
+        axes[dim].set_ylim(-1.1, 1.1)  # y軸の範囲と余裕
+        axes[dim].xaxis.set_major_locator(
+            plt.MultipleLocator(5)
+        )  # x軸のグリッドを5刻みに
+
+    # y軸のラベルを中央に1つだけ追加
+    fig.text(0.005, 0.5, "State Values", va="center", rotation="vertical")
+
+    # x軸タイトルを設定
+    axes[-1].set_xlabel("Time Step")
 
     # レイアウト調整
     plt.tight_layout()
-    # plt.show()
 
     return fig
 
@@ -200,6 +210,7 @@ def main(
             true_states_plot_data, pred_states_plot_data, state_dim, k_max
         )
         figs.append(fig)
+        plt.close()
 
     return figs
 
@@ -219,6 +230,8 @@ if __name__ == "__main__":
     metadata_id = utils.set_matadata_id(db_config, metadata_id)
 
     figs = main(metadata_id, db_config)
+    for i, fig in enumerate(figs):
+        fig.savefig(f"fig_{i}.png")
 
     # # 保存
     # fig_path = Path(__file__).parent / f"data/figs/sample_{metadata_id}.png"
