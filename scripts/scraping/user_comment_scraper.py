@@ -233,8 +233,8 @@ def get_and_save_articles_and_comments(
                 execute_query(
                     query=f"""
                     UPDATE comments
-                    SET parent_comment_id = {comment_id}
-                    WHERE comment_id = {reply_comment_id}                    
+                    SET parent_comment_id = {reply_comment_id}
+                    WHERE comment_id = {comment_id}                    
                     """,
                     db_config=db_config,
                     commit=True,
