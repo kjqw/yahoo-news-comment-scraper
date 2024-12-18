@@ -8,39 +8,6 @@ sys.path.append(str(Path(__file__).parents[2]))
 
 from db_manager import execute_query
 
-# %%
-db_config = {
-    "host": "postgresql_db",
-    "database": "yahoo_news",
-    "user": "kjqw",
-    "password": "1122",
-    "port": "5432",
-}
-
-# %%
-scraped_times = execute_query(
-    """
-    SELECT scraped_time
-    FROM comments
-    """
-)
-scraped_times = [i[0] for i in scraped_times]
-
-posted_times = execute_query(
-    """
-    SELECT posted_time
-    FROM comments
-    """
-)
-posted_times = [i[0] for i in posted_times]
-
-# %%
-# scraped_times
-posted_times
-# %%
-# len(scraped_times)
-len(posted_times)
-
 
 # %%
 def normalize_time(posted_time: str, scraped_time: datetime) -> datetime:
@@ -123,16 +90,90 @@ if __name__ == "__main__":
             print(e)
 
 # %%
-results = []
-for posted_time, scraped_time in zip(posted_times, scraped_times):
+db_config = {
+    "host": "postgresql_db",
+    "database": "yahoo_news",
+    "user": "kjqw",
+    "password": "1122",
+    "port": "5432",
+}
+
+# %%
+comment_ids, posted_times, scraped_times = zip(
+    *execute_query(
+        """
+        SELECT comment_id, posted_time, scraped_time
+        FROM comments
+        """
+    )
+)
+# %%
+# posted_times
+
+# %%
+# 列 normalized_posted_time が存在しない場合、追加
+execute_query(
+    """
+    ALTER TABLE comments
+    ADD COLUMN IF NOT EXISTS normalized_posted_time TIMESTAMP
+    """,
+    db_config,
+    commit=True,
+)
+
+# posted_time の正規化
+for comment_id, posted_time, scraped_time in zip(
+    comment_ids, posted_times, scraped_times
+):
     try:
-        results.append(normalize_time(posted_time, scraped_time))
-        print(posted_time, scraped_time)
+        normalized_posted_time = normalize_time(posted_time, scraped_time)
+        # 正規化後のposted_timeを新たな列 normalized_posted_time として追加
+        execute_query(
+            f"""
+            UPDATE comments
+            SET normalized_posted_time = '{normalized_posted_time}'
+            WHERE comment_id = '{comment_id}'
+            """,
+            db_config,
+            commit=True,
+        )
     except:
         # print(posted_time, scraped_time)
         pass
+
 # %%
-sorted(results)
+# 「4日前」や「3時間前」などの posted_time を正規化しても分の精度は出ないので、不確かであることを示すための is_time_uncertain 列を追加
+execute_query(
+    """
+    ALTER TABLE comments
+    ADD COLUMN IF NOT EXISTS is_time_uncertain BOOLEAN
+    """,
+    db_config,
+    commit=True,
+)
+
 # %%
-len(results)
+# posted_time が「~日前」や「~時間前」の場合、posted_time が不確かであるとして is_time_uncertain を True に設定
+execute_query(
+    """
+    UPDATE comments
+    SET is_time_uncertain = TRUE
+    WHERE posted_time ~ '^[0-9]+(日前|時間前)$';
+    """,
+    db_config,
+    commit=True,
+)
+
+# %%
+# posted_time が「~日前」や「~時間前」でない場合、posted_time が確かであるとして is_time_uncertain を False に設定
+execute_query(
+    """
+    UPDATE comments
+    SET is_time_uncertain = FALSE
+    WHERE normalized_posted_time IS NOT NULL
+    AND posted_time !~ '^[0-9]+(日前|時間前)$';
+    """,
+    db_config,
+    commit=True,
+)
 # %%
