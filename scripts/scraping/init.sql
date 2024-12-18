@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS comments (
     username TEXT,
     user_link TEXT,
     posted_time TEXT,
+    normalized_posted_time TIMESTAMP,
+    is_time_uncertain BOOLEAN,
     comment_content TEXT,
     agreements_count INTEGER,
     acknowledgements_count INTEGER,
