@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS comments (
     scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (
         article_id,
-        user_id,
+        user_link,
         comment_content
     )
 );
