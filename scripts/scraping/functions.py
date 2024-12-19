@@ -1,5 +1,6 @@
 import inspect
 import re
+from datetime import datetime, timedelta
 from pathlib import PurePosixPath
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -361,3 +362,64 @@ def normalize_number(text: str) -> int:
         return int(text)
     else:
         return 0
+
+
+def normalize_time(posted_time: str, scraped_time: datetime) -> datetime:
+    """
+    時間表記を正規化し、datetimeオブジェクトとして返す（分までの精度）.
+
+    Parameters
+    ----------
+    posted_time : str
+        投稿時間の表記（例: "1時間前", "たった今", "10/10(木) 13:11", "2022/9/10(土) 13:01"など）
+    scraped_time : datetime
+        スクレイピング時の基準時間
+
+    Returns
+    -------
+    datetime
+        正規化された投稿時間（秒以下切り捨て）
+    """
+    # "たった今" の処理
+    if posted_time == "たった今":
+        return scraped_time.replace(second=0, microsecond=0)
+
+    # "~分前", "~時間前", "~日前" の処理
+    if "前" in posted_time:
+        match = re.match(r"(\d+)(分|時間|日)前", posted_time)
+        if not match:
+            raise ValueError(f"正規表現にマッチしません: {posted_time}")
+        value = int(match.group(1))
+        unit = match.group(2)
+        if unit == "分":
+            result = scraped_time - timedelta(minutes=value)
+        elif unit == "時間":
+            result = scraped_time - timedelta(hours=value)
+        elif unit == "日":
+            result = scraped_time - timedelta(days=value)
+        else:
+            raise ValueError(f"未対応の単位: {unit}")
+        return result.replace(second=0, microsecond=0)
+
+    # "mm/dd(曜日) hh:MM" または "YYYY/mm/dd(曜日) hh:MM" の処理
+    match = re.match(
+        r"(?:(\d{4})/)?(\d{1,2})/(\d{1,2})\(.\)\s(\d{1,2}):(\d{1,2})", posted_time
+    )
+    if match:
+        year = int(match.group(1)) if match.group(1) else scraped_time.year
+        month = int(match.group(2))
+        day = int(match.group(3))
+        hour = int(match.group(4))
+        minute = int(match.group(5))
+
+        # 年が指定されていない場合、未来の日付を除外するため年度を調整
+        if (
+            not match.group(1)
+            and datetime(year, month, day, hour, minute) > scraped_time
+        ):
+            year -= 1
+
+        return datetime(year, month, day, hour, minute)
+
+    # 該当しないフォーマットは例外を発生
+    raise ValueError(f"未対応のフォーマット: {posted_time}")
