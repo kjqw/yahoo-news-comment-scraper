@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS articles (
     article_title TEXT,
     author TEXT,
     posted_time TEXT,
+    normalized_posted_time TIMESTAMP,
     updated_time TEXT,
     ranking INTEGER,
     article_genre TEXT,
