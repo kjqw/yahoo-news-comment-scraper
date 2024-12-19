@@ -1,5 +1,6 @@
 # %%
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import functions
@@ -46,6 +47,11 @@ def get_and_save_articles(article_links: list[str], timeout: int = 10) -> None:
                     "new_perspective_count": RELATIVE_XPATH_ARTICLE_NEW_PERSPECTIVE_COUNT,
                 },
             )
+
+            normalized_posted_time = functions.normalize_time(
+                article.posted_time, datetime.now()
+            )
+            article.normalized_posted_time = normalized_posted_time
 
             # データベースに保存
             article.update_data("articles")
