@@ -280,7 +280,7 @@ def get_user_links_from_db(db_config: dict, num: int):
 if __name__ == "__main__":
     db_config = {
         "host": "postgresql_db",
-        "database": "yahoo_news",
+        "database": "yahoo_news_restore",
         "user": "kjqw",
         "password": "1122",
         "port": "5432",
@@ -288,7 +288,33 @@ if __name__ == "__main__":
     max_comments = 100
     max_users = 10
 
-    user_links = get_user_links_from_db(db_config, max_users)
+    # user_links = get_user_links_from_db(db_config, max_users)
+    user_links = [
+        i[0]
+        for i in execute_query(
+            query=f"""
+        SELECT user_link
+        FROM users
+        ORDER BY total_comment_count DESC
+        LIMIT {max_users}
+        """,
+            db_config=db_config,
+        )
+    ]
+
     for url in user_links:
         get_and_save_articles_and_comments(db_config, url, max_comments)
+        execute_query(
+            query=f"""
+            UPDATE comments
+            SET user_id = (
+                SELECT user_id
+                FROM users
+                WHERE user_link = '{url}'
+            )
+            WHERE user_link = '{url}'
+            """,
+            db_config=db_config,
+            commit=True,
+        )
 # %%
