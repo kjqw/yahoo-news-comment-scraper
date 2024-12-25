@@ -44,10 +44,10 @@ user_ids = [
     i[0]
     for i in execute_query(
         """
-    SELECT user_id
-    FROM users
-    ORDER BY total_comment_count DESC;
-    """,
+        SELECT user_id
+        FROM users
+        ORDER BY total_comment_count DESC;
+        """,
         db_config,
     )
     if i[0] is not None
