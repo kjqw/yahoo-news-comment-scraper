@@ -147,7 +147,7 @@ unprocessed_article_links = execute_query(
 # %%
 # 記事の本文を取得
 article_scraper.get_and_save_articles(
-    [article_link for _, article_link in unprocessed_article_links]
+    db_config, [article_link for _, article_link in unprocessed_article_links]
 )
 
 # %%
