@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 from math import ceil
 from pathlib import Path
 
@@ -244,13 +245,18 @@ def get_article_comments(
                 general_comment.get_info(
                     general_comment_section, xpaths_general_comments
                 )
-                # 数値を正規化
-                general_comment.normalize_number()
 
                 general_comment.article_id = article_id
 
+                # 数値を正規化
+                general_comment.normalize_number()
+                normalized_posted_time = functions.normalize_time(
+                    general_comment.posted_time, datetime.now()
+                )
+                general_comment.normalized_posted_time = normalized_posted_time
+
                 # 一般コメントの情報を保存
-                general_comment.save_data("comments")
+                general_comment.save_data("comments", db_config)
 
                 # 一般コメントのIDをクラスに追加
                 try:
@@ -280,14 +286,19 @@ def get_article_comments(
                         reply_comment.get_info(
                             reply_comment_section, xpaths_reply_comments
                         )
-                        # 数値を正規化
-                        reply_comment.normalize_number()
 
                         reply_comment.parent_comment_id = general_comment.comment_id
                         reply_comment.article_id = article_id
 
+                        # 数値を正規化
+                        reply_comment.normalize_number()
+                        normalized_posted_time = functions.normalize_time(
+                            reply_comment.posted_time, datetime.now()
+                        )
+                        reply_comment.normalized_posted_time = normalized_posted_time
+
                         # 返信コメントの情報を保存
-                        reply_comment.save_data("comments")
+                        reply_comment.save_data("comments", db_config)
 
             # 次のページに移動
             page += 1

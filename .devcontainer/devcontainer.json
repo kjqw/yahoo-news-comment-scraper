@@ -1,7 +1,7 @@
 {
-    "name": "yahoo-news-comment-scraper",
+    "name": "yahoo_news_comment_scraper",
     "dockerComposeFile": "./docker-compose.yml",
-    "service": "yahoo-news-comment-scraper",
+    "service": "yahoo_news_comment_scraper",
     "workspaceFolder": "/workspace",
     "customizations": {
         "vscode": {

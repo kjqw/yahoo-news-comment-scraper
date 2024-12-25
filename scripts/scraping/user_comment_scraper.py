@@ -1,5 +1,6 @@
 # %%
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import functions
@@ -109,7 +110,16 @@ def get_and_save_articles_and_comments(
                             "posted_time": RELATIVE_XPATH_ARTICLE_POSTED_TIME,
                         },
                     )
+
+                    # 数値を正規化
+                    normalized_posted_time = functions.normalize_time(
+                        article.posted_time, datetime.now()
+                    )
+                    article.normalized_posted_time = normalized_posted_time
+
+                    # データベースに保存
                     article.save_data("articles", db_config)
+
                     article.article_id = execute_query(
                         query=f"""
                         SELECT article_id
@@ -137,6 +147,14 @@ def get_and_save_articles_and_comments(
                             },
                         )
                         comment.article_id = article.article_id
+
+                        # 数値を正規化
+                        normalized_posted_time = functions.normalize_time(
+                            comment.posted_time, datetime.now()
+                        )
+                        comment.normalized_posted_time = normalized_posted_time
+
+                        # データベースに保存
                         comment.save_data("comments", db_config)
                     except:
                         pass
@@ -158,6 +176,14 @@ def get_and_save_articles_and_comments(
                             },
                         )
                         comment.article_id = article.article_id
+
+                        # 数値を正規化
+                        normalized_posted_time = functions.normalize_time(
+                            comment.posted_time, datetime.now()
+                        )
+                        comment.normalized_posted_time = normalized_posted_time
+
+                        # データベースに保存
                         comment.save_data("comments", db_config)
 
                         comment_id = execute_query(
@@ -219,6 +245,14 @@ def get_and_save_articles_and_comments(
                     """,
                     db_config=db_config,
                 )[0][0]
+
+                # 数値を正規化
+                normalized_posted_time = functions.normalize_time(
+                    reply_comment.posted_time, datetime.now()
+                )
+                reply_comment.normalized_posted_time = normalized_posted_time
+
+                # データベースに保存
                 reply_comment.save_data("comments", db_config)
 
                 reply_comment_id = execute_query(
@@ -233,8 +267,8 @@ def get_and_save_articles_and_comments(
                 execute_query(
                     query=f"""
                     UPDATE comments
-                    SET parent_comment_id = {comment_id}
-                    WHERE comment_id = {reply_comment_id}                    
+                    SET parent_comment_id = {reply_comment_id}
+                    WHERE comment_id = {comment_id}                    
                     """,
                     db_config=db_config,
                     commit=True,
@@ -280,7 +314,7 @@ def get_user_links_from_db(db_config: dict, num: int):
 if __name__ == "__main__":
     db_config = {
         "host": "postgresql_db",
-        "database": "yahoo_news",
+        "database": "yahoo_news_restore",
         "user": "kjqw",
         "password": "1122",
         "port": "5432",
@@ -288,7 +322,33 @@ if __name__ == "__main__":
     max_comments = 100
     max_users = 10
 
-    user_links = get_user_links_from_db(db_config, max_users)
+    # user_links = get_user_links_from_db(db_config, max_users)
+    user_links = [
+        i[0]
+        for i in execute_query(
+            query=f"""
+            SELECT user_link
+            FROM users
+            ORDER BY total_comment_count DESC
+            LIMIT {max_users}
+            """,
+            db_config=db_config,
+        )
+    ]
+
     for url in user_links:
         get_and_save_articles_and_comments(db_config, url, max_comments)
+        execute_query(
+            query=f"""
+            UPDATE comments
+            SET user_id = (
+                SELECT user_id
+                FROM users
+                WHERE user_link = '{url}'
+            )
+            WHERE user_link = '{url}'
+            """,
+            db_config=db_config,
+            commit=True,
+        )
 # %%

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS articles (
     article_title TEXT,
     author TEXT,
     posted_time TEXT,
+    normalized_posted_time TIMESTAMP,
     updated_time TEXT,
     ranking INTEGER,
     article_genre TEXT,
@@ -39,6 +40,8 @@ CREATE TABLE IF NOT EXISTS comments (
     username TEXT,
     user_link TEXT,
     posted_time TEXT,
+    normalized_posted_time TIMESTAMP,
+    is_time_uncertain BOOLEAN,
     comment_content TEXT,
     agreements_count INTEGER,
     acknowledgements_count INTEGER,
@@ -48,7 +51,7 @@ CREATE TABLE IF NOT EXISTS comments (
     scraped_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (
         article_id,
-        user_id,
+        user_link,
         comment_content
     )
 );

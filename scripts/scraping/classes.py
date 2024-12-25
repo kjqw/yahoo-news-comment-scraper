@@ -68,7 +68,7 @@ class DBBase:
 
         db_manager.execute_query(query, db_config, commit=True)
 
-    def get_info(self, driver: webdriver, xpaths: dict[str, str]) -> None:
+    def get_info(self, driver: webdriver, xpaths: dict[str, list[str] | str]) -> None:
         """
         渡されたXPATHの辞書を用いて記事の情報を取得する。
         '_link'で終わるキーの場合はhref属性を、それ以外の場合はtextを取得する。
@@ -77,31 +77,45 @@ class DBBase:
         ----------
         driver : webdriver
             WebDriverインスタンス
-        xpaths : dict[str, str]
-            XPATHの辞書
+        xpaths : dict[str, list[str] | str]
+            XPATHの辞書（キーに対して単一または複数のXPATHを渡す）
         """
         try:
             # 各XPATHを用いて情報を取得
-            for key, xpath in xpaths.items():
-                try:
-                    element = driver.find_element(By.XPATH, xpath)
+            for key, xpath_value in xpaths.items():
+                element = None
 
+                # 値が文字列の場合はリストに変換
+                xpath_list = (
+                    xpath_value if isinstance(xpath_value, list) else [xpath_value]
+                )
+
+                # 複数のXPATHを試す
+                for xpath in xpath_list:
+                    try:
+                        element = driver.find_element(By.XPATH, xpath)
+                        if element:  # 要素が見つかったら終了
+                            break
+                    except Exception:
+                        continue
+
+                if element:
                     # keyが'_link'で終わる場合はhref属性を取得する
                     if key.endswith("_link"):
                         link_value = element.get_attribute("href")
                         setattr(self, key, link_value)
-                    # その他のtextデータを取得する
+                    # その他の場合はtextを取得する
                     else:
                         text_value = element.text
                         setattr(self, key, text_value)
+                else:
+                    print(f"{key}に対応する要素が見つかりませんでした。")
 
-                except Exception as e:
-                    print(f"{key}を取得中にエラーが発生しました: {e}")
-
+            # 数値の属性を正規化
             self.normalize_number()
 
-        except:
-            pass
+        except Exception as e:
+            print(f"情報取得中にエラーが発生しました: {e}")
 
     def normalize_number(self) -> None:
         """

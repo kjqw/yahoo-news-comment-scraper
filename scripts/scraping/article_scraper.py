@@ -1,5 +1,6 @@
 # %%
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import functions
@@ -13,7 +14,9 @@ sys.path.append(str(Path(__file__).parents[1]))
 from db_manager import execute_query
 
 
-def get_and_save_articles(article_links: list[str], timeout: int = 10) -> None:
+def get_and_save_articles(
+    db_config, article_links: list[str], timeout: int = 10
+) -> None:
     """
     記事のリンクを入力して、記事の本文などの情報を取得する。
     """
@@ -47,8 +50,13 @@ def get_and_save_articles(article_links: list[str], timeout: int = 10) -> None:
                 },
             )
 
+            normalized_posted_time = functions.normalize_time(
+                article.posted_time, datetime.now()
+            )
+            article.normalized_posted_time = normalized_posted_time
+
             # データベースに保存
-            article.update_data("articles")
+            article.update_data("articles", db_config)
 
         except:
             pass
@@ -112,6 +120,6 @@ if __name__ == "__main__":
     print("Article Links:", article_links)
 
     # 記事のリンクを入力して、記事の本文などの情報を取得する。
-    get_and_save_articles(article_links)
+    get_and_save_articles(db_config, article_links)
 
 # %%
