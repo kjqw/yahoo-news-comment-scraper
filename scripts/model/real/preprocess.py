@@ -93,8 +93,11 @@ for user_id in user_ids:
         )[0][0]
         if parent_comment_id is None:
             user_data[user_id][i] = {
+                "comment_id": comment_id,
                 "comment_content": comment_content,
+                "article_id": article_id,
                 "article_content": article_content,
+                "parent_comment_id": None,
                 "parent_comment_content": None,
                 "normalized_posted_time": normalized_posted_time,
             }
@@ -109,21 +112,28 @@ for user_id in user_ids:
             )[0][0]
 
             user_data[user_id][i] = {
+                "comment_id": comment_id,
                 "comment_content": comment_content,
+                "article_id": article_id,
                 "article_content": article_content,
+                "parent_comment_id": parent_comment_id,
                 "parent_comment_content": parent_comment_content,
                 "normalized_posted_time": normalized_posted_time,
             }
 
 # %%
-user_id
-# %%
-user_data
-
-# %%
-user_data.keys()
-# %%
-len(user_data[8])
-# %%
 # 結果をデータベースに保存
+for user_id, data in user_data.items():
+    for i, d in data.items():
+        execute_query(
+            f"""
+            INSERT INTO training_data_raw
+            (user_id, article_id, article_content, parent_comment_id, parent_comment_content, comment_id, comment_content, normalized_posted_time)
+            VALUES
+            ('{user_id}', '{d["article_id"]}', '{d["article_content"]}', '{d["parent_comment_id"]}', '{d["parent_comment_content"]}', '{d["comment_id"]}', '{d["comment_content"]}', '{d["normalized_posted_time"]}');
+            """,
+            db_config,
+            commit=True,
+        )
+
 # %%
