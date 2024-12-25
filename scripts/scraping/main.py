@@ -63,7 +63,7 @@ unprocessed_articles = execute_query(
 # 記事の本文を取得
 article_scraper.get_and_save_articles(
     db_config,
-    [article_link for _, article_link in unprocessed_articles[:max_articles]],
+    [article_link for _, article_link in unprocessed_articles],
 )
 
 # %%
