@@ -34,8 +34,6 @@ labels_category = [
     "エンタメ",
     "スポーツ",
     "IT・科学",
-    "ライフ",
-    "地域",
 ]
 labels_sentiment = ["ポジティブ", "中立", "ネガティブ"]
 hypothesis_template_category = "この文章は{}に関する内容です。"
@@ -47,17 +45,18 @@ user_ids = [
     for i in execute_query(
         """
     SELECT user_id
-    FROM comments
-    GROUP BY user_id;
+    FROM users
+    ORDER BY total_comment_count DESC;
     """,
         db_config,
     )
     if i[0] is not None
 ]
-
 # %%
-user_data = {}
-for user_id in user_ids:
+# %%
+# TODO: forでクエリを繰り返しているため遅い
+user_data = defaultdict(dict)
+for user_id in user_ids[:2]:
     comment_ids, article_ids, parent_comment_ids, normalized_posted_times = zip(
         *execute_query(
             f"""
@@ -89,11 +88,10 @@ for user_id in user_ids:
             db_config,
         )[0][0]
         if parent_comment_id is None:
-            user_data[user_id] = {
-                normalized_posted_time: {
-                    "comment_content": comment_content,
-                    "article_content": article_content,
-                }
+            user_data[user_id][normalized_posted_time] = {
+                "comment_content": comment_content,
+                "article_content": article_content,
+                "parent_comment_content": None,
             }
         else:
             parent_comment_content = execute_query(
@@ -105,17 +103,19 @@ for user_id in user_ids:
                 db_config,
             )[0][0]
 
-            user_data[user_id] = {
-                normalized_posted_time: {
-                    "comment_content": comment_content,
-                    "article_content": article_content,
-                    "parent_comment_content": parent_comment_content,
-                }
+            user_data[user_id][normalized_posted_time] = {
+                "comment_content": comment_content,
+                "article_content": article_content,
+                "parent_comment_content": parent_comment_content,
             }
 
 # %%
 user_data
 
+# %%
+user_data.keys()
+# %%
+len(user_data[25])
 # %%
 # 結果をデータベースに保存
 # %%
