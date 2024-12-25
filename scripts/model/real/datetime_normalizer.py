@@ -92,7 +92,7 @@ if __name__ == "__main__":
 # %%
 db_config = {
     "host": "postgresql_db",
-    "database": "yahoo_news",
+    "database": "yahoo_news_restore",
     "user": "kjqw",
     "password": "1122",
     "port": "5432",
@@ -104,12 +104,10 @@ comment_ids, posted_times, scraped_times = zip(
         """
         SELECT comment_id, posted_time, scraped_time
         FROM comments
-        """
-    )
+        """,
+        db_config,
+    ),
 )
-# %%
-# posted_times
-
 # %%
 # 列 normalized_posted_time が存在しない場合、追加
 execute_query(
@@ -121,6 +119,7 @@ execute_query(
     commit=True,
 )
 
+# %%
 # posted_time の正規化
 for comment_id, posted_time, scraped_time in zip(
     comment_ids, posted_times, scraped_times

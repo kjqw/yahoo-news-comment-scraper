@@ -1,5 +1,6 @@
 # %%
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import functions
@@ -109,7 +110,16 @@ def get_and_save_articles_and_comments(
                             "posted_time": RELATIVE_XPATH_ARTICLE_POSTED_TIME,
                         },
                     )
+
+                    # 数値を正規化
+                    normalized_posted_time = functions.normalize_time(
+                        article.posted_time, datetime.now()
+                    )
+                    article.normalized_posted_time = normalized_posted_time
+
+                    # データベースに保存
                     article.save_data("articles", db_config)
+
                     article.article_id = execute_query(
                         query=f"""
                         SELECT article_id
@@ -137,6 +147,14 @@ def get_and_save_articles_and_comments(
                             },
                         )
                         comment.article_id = article.article_id
+
+                        # 数値を正規化
+                        normalized_posted_time = functions.normalize_time(
+                            comment.posted_time, datetime.now()
+                        )
+                        comment.normalized_posted_time = normalized_posted_time
+
+                        # データベースに保存
                         comment.save_data("comments", db_config)
                     except:
                         pass
@@ -158,6 +176,14 @@ def get_and_save_articles_and_comments(
                             },
                         )
                         comment.article_id = article.article_id
+
+                        # 数値を正規化
+                        normalized_posted_time = functions.normalize_time(
+                            comment.posted_time, datetime.now()
+                        )
+                        comment.normalized_posted_time = normalized_posted_time
+
+                        # データベースに保存
                         comment.save_data("comments", db_config)
 
                         comment_id = execute_query(
@@ -219,6 +245,14 @@ def get_and_save_articles_and_comments(
                     """,
                     db_config=db_config,
                 )[0][0]
+
+                # 数値を正規化
+                normalized_posted_time = functions.normalize_time(
+                    reply_comment.posted_time, datetime.now()
+                )
+                reply_comment.normalized_posted_time = normalized_posted_time
+
+                # データベースに保存
                 reply_comment.save_data("comments", db_config)
 
                 reply_comment_id = execute_query(
@@ -293,11 +327,11 @@ if __name__ == "__main__":
         i[0]
         for i in execute_query(
             query=f"""
-        SELECT user_link
-        FROM users
-        ORDER BY total_comment_count DESC
-        LIMIT {max_users}
-        """,
+            SELECT user_link
+            FROM users
+            ORDER BY total_comment_count DESC
+            LIMIT {max_users}
+            """,
             db_config=db_config,
         )
     ]
