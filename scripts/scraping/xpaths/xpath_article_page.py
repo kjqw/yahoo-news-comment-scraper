@@ -22,7 +22,6 @@ RELATIVE_XPATH_ARTICLE_LERAN_COUNT = [
     "article/div[4]/ul/li[1]/div/span",
     "article/div[5]/ul/li[1]/div/span",
 ]
-"article/div[3]/ul/li[1]/div/span"
 RELATIVE_XPATH_ARTICLE_CLARITY_COUNT = [
     "article/div[3]/ul/li[2]/div/span",
     "article/div[4]/ul/li[2]/div/span",
