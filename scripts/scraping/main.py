@@ -37,7 +37,7 @@ execute_query(query, db_config=db_config, commit=True)
 
 # %%
 max_comments_article_page = 30  # 記事ページをスクレイピングする際の最大コメント数
-max_comments_user_page = 100  # ユーザーページをスクレイピングする際の最大コメント数
+max_comments_user_page = 200  # ユーザーページをスクレイピングする際の最大コメント数
 max_replies = 10  # 記事ページをスクレイピングする際の最大返信数
 max_articles = 10  # スクレイピングする記事の最大数
 max_users = 10  # スクレイピングするユーザーの最大数
