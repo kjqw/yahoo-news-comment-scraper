@@ -40,36 +40,40 @@ hypothesis_template_category = "この文章は{}に関する内容です。"
 hypothesis_template_sentiment = "この文章の感情は{}です。"
 
 # %%
-user_ids = [
-    i[0]
-    for i in execute_query(
+user_ids, _ = zip(
+    *execute_query(
         """
-        SELECT user_id
+        SELECT DISTINCT users.user_id, users.total_comment_count
         FROM users
-        ORDER BY total_comment_count DESC;
+        INNER JOIN comments ON users.user_id = comments.user_id
+        ORDER BY users.total_comment_count DESC;
         """,
         db_config,
     )
-    if i[0] is not None
-]
-# %%
+)
+user_ids
 # %%
 # TODO: forでクエリを繰り返しているため遅い
 user_data = defaultdict(dict)
-for user_id in user_ids[:2]:
+for user_id in user_ids:
     comment_ids, article_ids, parent_comment_ids, normalized_posted_times = zip(
         *execute_query(
             f"""
             SELECT comment_id, article_id, parent_comment_id, normalized_posted_time
             FROM comments
             WHERE user_id = {user_id}
-            ORDER BY normalized_posted_time DESC;
+            ORDER BY normalized_posted_time ASC, scraped_time ASC;
             """,
             db_config,
         )
     )
-    for comment_id, article_id, parent_comment_id, normalized_posted_time in zip(
-        comment_ids, article_ids, parent_comment_ids, normalized_posted_times
+    for i, (
+        comment_id,
+        article_id,
+        parent_comment_id,
+        normalized_posted_time,
+    ) in enumerate(
+        zip(comment_ids, article_ids, parent_comment_ids, normalized_posted_times)
     ):
         comment_content = execute_query(
             f"""
@@ -88,10 +92,11 @@ for user_id in user_ids[:2]:
             db_config,
         )[0][0]
         if parent_comment_id is None:
-            user_data[user_id][normalized_posted_time] = {
+            user_data[user_id][i] = {
                 "comment_content": comment_content,
                 "article_content": article_content,
                 "parent_comment_content": None,
+                "normalized_posted_time": normalized_posted_time,
             }
         else:
             parent_comment_content = execute_query(
@@ -103,19 +108,22 @@ for user_id in user_ids[:2]:
                 db_config,
             )[0][0]
 
-            user_data[user_id][normalized_posted_time] = {
+            user_data[user_id][i] = {
                 "comment_content": comment_content,
                 "article_content": article_content,
                 "parent_comment_content": parent_comment_content,
+                "normalized_posted_time": normalized_posted_time,
             }
 
+# %%
+user_id
 # %%
 user_data
 
 # %%
 user_data.keys()
 # %%
-len(user_data[25])
+len(user_data[8])
 # %%
 # 結果をデータベースに保存
 # %%
