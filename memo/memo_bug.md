@@ -54,3 +54,9 @@ finally:
 ```
 
 `get_reply_comment_sections`の前に返信数を取得すると取得できた。`get_reply_comment_sections`の中で返信ボタンをクリックする動作があるが、それによってwebelementに何らかの変化が起きているのかもしれない。
+
+## 記事が複数ページあると「学びがある」数などが取得できない
+
+ページ遷移のボタンの有無でdivがずれる
+
+複数のxpathを試す処理で一応解決

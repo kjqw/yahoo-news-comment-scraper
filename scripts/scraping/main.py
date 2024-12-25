@@ -13,6 +13,7 @@ from pathlib import Path
 import article_comment_scraper
 import article_link_scraper
 import article_scraper
+import functions
 import user_comment_scraper
 from tqdm import tqdm
 
@@ -24,7 +25,7 @@ from db_manager import execute_query
 # データベースの初期化
 db_config = {
     "host": "postgresql_db",
-    "database": "yahoo_news",
+    "database": "yahoo_news_restore",
     "user": "kjqw",
     "password": "1122",
     "port": "5432",
@@ -36,7 +37,7 @@ execute_query(query, db_config=db_config, commit=True)
 
 # %%
 max_comments_article_page = 30  # 記事ページをスクレイピングする際の最大コメント数
-max_comments_user_page = 100  # ユーザーページをスクレイピングする際の最大コメント数
+max_comments_user_page = 200  # ユーザーページをスクレイピングする際の最大コメント数
 max_replies = 10  # 記事ページをスクレイピングする際の最大返信数
 max_articles = 10  # スクレイピングする記事の最大数
 max_users = 10  # スクレイピングするユーザーの最大数
@@ -44,7 +45,7 @@ timeout = 10  # webドライバのタイムアウト時間
 
 # %%
 # 現在ランキング上位の記事のリンクをスクレイピング
-article_link_scraper.get_and_save_articles()
+article_link_scraper.get_and_save_articles(db_config)
 
 # %%
 # まだ本文がスクレイピングされていない記事を取得
@@ -61,7 +62,8 @@ unprocessed_articles = execute_query(
 # %%
 # 記事の本文を取得
 article_scraper.get_and_save_articles(
-    [article_link for _, article_link in unprocessed_articles[:max_articles]]
+    db_config,
+    [article_link for _, article_link in unprocessed_articles[:max_articles]],
 )
 
 # %%
@@ -125,7 +127,8 @@ article_links = execute_query(
     SELECT article_link
     FROM articles
     WHERE article_id IN ({','.join(article_ids)});
-    """
+    """,
+    db_config=db_config,
 )
 article_links = [link[0] for link in article_links]
 

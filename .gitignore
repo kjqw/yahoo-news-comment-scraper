@@ -7,6 +7,6 @@ db_data/
 html/
 orders/
 
-test*
+tmp*
 
 uv.lock

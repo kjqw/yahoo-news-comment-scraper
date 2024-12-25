@@ -5,7 +5,9 @@ from tqdm import tqdm
 from xpaths.xpath_ranking_page import *
 
 
-def get_and_save_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> None:
+def get_and_save_articles(
+    db_config: dict, url: str = URL_COMMENT_RANKING, timeout: int = 10
+) -> None:
     """
     記事のリンクを取得する。
 
@@ -39,7 +41,7 @@ def get_and_save_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> 
             )
 
             # データベースに保存
-            article.save_data("articles")
+            article.save_data("articles", db_config)
 
     except:
         pass
@@ -49,4 +51,11 @@ def get_and_save_articles(url: str = URL_COMMENT_RANKING, timeout: int = 10) -> 
 
 
 if __name__ == "__main__":
-    get_and_save_articles()
+    db_config = {
+        "host": "postgresql_db",
+        "database": "yahoo_news_restore",
+        "user": "kjqw",
+        "password": "1122",
+        "port": "5432",
+    }
+    get_and_save_articles(db_config)

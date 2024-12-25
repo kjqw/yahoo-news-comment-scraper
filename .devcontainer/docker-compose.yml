@@ -1,9 +1,9 @@
 services:
-  yahoo-news-comment-scraper:
+  yahoo_news_comment_scraper:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    container_name: yahoo-news-comment-scraper
+    container_name: yahoo_news_comment_scraper
     volumes:
       # LLMのモデルを保存する場所を source: に指定すると、コンテナを消してもそこにダウンロードしたモデルが残る
       # 別のコンテナで同じモデルを使いたい場合に便利
@@ -12,7 +12,7 @@ services:
         target: /workspace/.cache
       - type: bind
         source: ../
-        target: /workspace/yahoo-news-comment-scraper
+        target: /workspace/yahoo_news_comment_scraper
     depends_on:
       - selenium
       - postgresql_db
