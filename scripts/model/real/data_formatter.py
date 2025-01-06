@@ -51,7 +51,7 @@ user_ids, _ = zip(
         db_config,
     )
 )
-user_ids
+
 # %%
 # TODO: forでクエリを繰り返しているため遅い
 user_data = defaultdict(dict)
@@ -125,15 +125,33 @@ for user_id in user_ids:
 # 結果をデータベースに保存
 for user_id, data in user_data.items():
     for i, d in data.items():
-        execute_query(
-            f"""
-            INSERT INTO training_data_raw
-            (user_id, article_id, article_content, parent_comment_id, parent_comment_content, comment_id, comment_content, normalized_posted_time)
-            VALUES
-            ('{user_id}', '{d["article_id"]}', '{d["article_content"]}', '{d["parent_comment_id"]}', '{d["parent_comment_content"]}', '{d["comment_id"]}', '{d["comment_content"]}', '{d["normalized_posted_time"]}');
-            """,
-            db_config,
-            commit=True,
+        # None を NULL に変換するフィールドだけ特別処理
+        parent_comment_id = (
+            f"'{d['parent_comment_id']}'"
+            if d["parent_comment_id"] is not None
+            else "NULL"
         )
+        parent_comment_content = (
+            f"'{d['parent_comment_content']}'"
+            if d["parent_comment_content"] is not None
+            else "NULL"
+        )
+
+        query = f"""
+        INSERT INTO training_data_raw
+        (user_id, article_id, article_content, parent_comment_id, parent_comment_content, comment_id, comment_content, normalized_posted_time)
+        VALUES
+        (
+            '{user_id}',
+            '{d["article_id"]}',
+            '{d["article_content"]}',
+            {parent_comment_id},
+            {parent_comment_content},
+            '{d["comment_id"]}',
+            '{d["comment_content"]}',
+            '{d["normalized_posted_time"]}'
+        );
+        """
+        execute_query(query, db_config, commit=True)
 
 # %%
