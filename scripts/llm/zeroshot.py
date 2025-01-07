@@ -3,8 +3,30 @@ from transformers import pipeline
 
 
 def main(
-    model_name: str, texts: list[str], labels: list[str], hypothesis_template: str
-):
+    model_name: str,
+    texts: list[str | None],
+    labels: list[str],
+    hypothesis_template: str,
+) -> list[dict | None]:
+    """
+    指定したテキストリストに対してゼロショット分類を行い、Noneを含む場合はそのままNoneを返す。
+
+    Parameters
+    ----------
+    model_name : str
+        使用するモデル名
+    texts : list[str | None]
+        分類対象のテキストリスト
+    labels : list[str]
+        ラベルのリスト
+    hypothesis_template : str
+        仮説テンプレート
+
+    Returns
+    -------
+    list[dict | None]
+        分類結果のリスト。Noneはそのまま保持される
+    """
     try:
         # 使用するデバイスを設定
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -16,22 +38,40 @@ def main(
             device=0 if device.type == "cuda" else -1,
         )
 
-        # ゼロショット分類
-        results = classifier(
-            texts,
-            labels,
-            hypothesis_template=hypothesis_template,
-            multi_label=False,
+        # None以外のインデックスとテキストを抽出
+        valid_indices_and_texts = [
+            (i, text) for i, text in enumerate(texts) if text is not None
+        ]
+        valid_indices, valid_texts = (
+            zip(*valid_indices_and_texts) if valid_indices_and_texts else ([], [])
         )
 
-        return results
+        # 有効なテキストを一括処理
+        results = []
+        if valid_texts:
+            processed_results = classifier(
+                list(valid_texts),
+                labels,
+                hypothesis_template=hypothesis_template,
+                multi_label=False,
+            )
+            results = list(processed_results)
+
+        # 元の順序で結果を構築
+        final_results = [None] * len(texts)
+        for idx, result in zip(valid_indices, results):
+            final_results[idx] = result
+
+        return final_results
 
     except Exception as e:
         print(e)
+        return [None] * len(texts)
 
     finally:
         # メモリ解放
-        del classifier
+        if "classifier" in locals():
+            del classifier
         torch.cuda.empty_cache()
 
 

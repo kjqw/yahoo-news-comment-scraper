@@ -1,17 +1,25 @@
 # ユーザーの情報のXPath
-XPATH_USER_NAME = "/html/body/div[1]/div/main/div[1]/div/div[1]/div/div[2]/p[1]"
-# XPATH_USER_NAME = "/html/body/div[1]/div/main/div[1]/div/div[2]/div/div[2]/p[1]" # 速報が入るとdivがずれてエラーになる
-# TODO あとで修正
-XPATH_TOTAL_COMMENT_COUNT = "/html/body/div[1]/div/main/div[1]/div/div[2]/div/span[2]"
-XPATH_TOTAL_AGREEMENTS = (
-    "/html/body/div[1]/div/main/div[1]/div/div[2]/ul/li[1]/span/span[2]"
-)
-XPATH_TOTAL_ACKNOWLEDGEMENTS = (
-    "/html/body/div[1]/div/main/div[1]/div/div[2]/ul/li[2]/span/span[2]"
-)
-XPATH_TOTAL_DISAGREEMENTS = (
-    "/html/body/div[1]/div/main/div[1]/div/div[2]/ul/li[3]/span/span[2]"
-)
+XPATH_USER_NAME = [
+    "/html/body/div[1]/div/main/div[1]/div/div[1]/div/div[2]/p[1]",
+    "/html/body/div[1]/div/main/div[1]/div/div[2]/div/div[2]/p[1]",
+]
+XPATH_TOTAL_COMMENT_COUNT = [
+    "/html/body/div[1]/div/main/div[1]/div/div[2]/div/span[2]",
+    "/html/body/div[1]/div/main/div[1]/div/div[3]/div/span[2]",
+]
+
+XPATH_TOTAL_AGREEMENTS = [
+    "/html/body/div[1]/div/main/div[1]/div/div[2]/ul/li[1]/span/span[2]",
+    "/html/body/div[1]/div/main/div[1]/div/div[3]/ul/li[1]/span/span[2]",
+]
+XPATH_TOTAL_ACKNOWLEDGEMENTS = [
+    "/html/body/div[1]/div/main/div[1]/div/div[2]/ul/li[2]/span/span[2]",
+    "/html/body/div[1]/div/main/div[1]/div/div[3]/ul/li[2]/span/span[2]",
+]
+XPATH_TOTAL_DISAGREEMENTS = [
+    "/html/body/div[1]/div/main/div[1]/div/div[2]/ul/li[3]/span/span[2]",
+    "/html/body/div[1]/div/main/div[1]/div/div[3]/ul/li[3]/span/span[2]",
+]
 
 # コメント部分のXPath
 XPATH_COMMENT_SECTIONS = "/html/body/div[1]/div/main/div[1]/div/ul/li"

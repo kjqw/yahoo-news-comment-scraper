@@ -11,6 +11,7 @@ DB_CONFIG = {
 
 def execute_query(
     query: str,
+    # params: tuple | None = None,
     db_config: dict = DB_CONFIG,
     commit: bool = False,
 ) -> list[tuple]:
@@ -35,6 +36,7 @@ def execute_query(
         conn = psycopg2.connect(**db_config)
         with conn.cursor() as cur:
             cur.execute(query)
+            # cur.execute(query, params)
             if commit:
                 conn.commit()
             else:
