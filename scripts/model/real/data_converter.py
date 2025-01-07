@@ -59,7 +59,7 @@ raw_data = {}
 for user_id in user_ids:
     raw_data[user_id] = execute_query(
         f"""
-        SELECT article_id, article_content, parent_comment_id, parent_comment_content, comment_id, comment_content, normalized_posted_time
+        SELECT *
         FROM training_data_raw
         WHERE user_id = {user_id}
         ORDER BY normalized_posted_time ASC;
@@ -73,13 +73,14 @@ order_sentiment = ["ポジティブ", "中立", "ネガティブ"]
 order_category = ["国内", "国際", "経済", "エンタメ", "スポーツ", "IT・科学"]
 for user_id, data in raw_data.items():
     (
+        _,
         article_ids,
         article_contents,
         parent_comment_ids,
         parent_comment_contents,
         comment_ids,
         comment_contents,
-        _,
+        normalized_posted_times,
     ) = map(list, zip(*data[:3]))
 
     # ネガポジをベクトル化
@@ -136,61 +137,121 @@ for user_id, data in raw_data.items():
             for item in comment_content_vector_sentiment
         ],
     }
+    # 結果をデータベースに保存
+    data_to_insert = [
+        (
+            user_id,
+            article_id,
+            article_content_vector,
+            parent_comment_id,
+            parent_comment_content_vector,
+            comment_id,
+            comment_content_vector,
+            normalized_posted_time,
+        )
+        for (
+            article_id,
+            article_content_vector,
+            parent_comment_id,
+            parent_comment_content_vector,
+            comment_id,
+            comment_content_vector,
+            normalized_posted_time,
+        ) in zip(
+            article_ids,
+            sorted_article_content_vector_sentiment["scores"],
+            parent_comment_ids,
+            sorted_parent_comment_content_vector_sentiment["scores"],
+            comment_ids,
+            sorted_comment_content_vector_sentiment["scores"],
+            normalized_posted_times,
+        )
+    ]
+    execute_query(
+        f"""
+        INSERT INTO training_data_vectorized_sentiment
+        (user_id, article_id, article_content_vector, parent_comment_id, parent_comment_content_vector, comment_id, comment_content_vector, normalized_posted_time)
+        VALUES
+        """
+        + ",".join(
+            [
+                (
+                    """('{}', '{}', ARRAY{}, '{}', ARRAY{}, '{}', ARRAY{}, '{}')""".format(
+                        d[0],
+                        d[1],
+                        d[2],
+                        d[3],
+                        d[4],
+                        d[5],
+                        d[6],
+                        d[7],
+                    )
+                    if d[3] is not None
+                    else """('{}', '{}', ARRAY{}, NULL, NULL, '{}', ARRAY{}, '{}')""".format(
+                        d[0], d[1], d[2], d[5], d[6], d[7]
+                    )
+                )
+                for d in data_to_insert
+            ]
+        ),
+        db_config,
+        commit=True,
+    )
 
-    # カテゴリをベクトル化
-    article_content_vector_category = zeroshot.main(
-        MODEL_NAME,
-        article_contents,
-        labels_category,
-        hypothesis_template_category,
-    )
-    parent_comment_content_vector_category = zeroshot.main(
-        MODEL_NAME,
-        parent_comment_contents,
-        labels_category,
-        hypothesis_template_category,
-    )
-    comment_content_vector_category = zeroshot.main(
-        MODEL_NAME,
-        comment_contents,
-        labels_category,
-        hypothesis_template_category,
-    )
-    # 出力を整形
-    sorted_article_content_vector_category = {
-        "sequences": [item["sequence"] for item in article_content_vector_category],
-        "labels": order_category,
-        "scores": [
-            [item["scores"][item["labels"].index(label)] for label in order_category]
-            for item in article_content_vector_category
-        ],
-    }
-    sorted_parent_comment_content_vector_category = {
-        "sequences": [
-            item["sequence"] if item is not None else None
-            for item in parent_comment_content_vector_category
-        ],
-        "labels": order_category,
-        "scores": [
-            (
-                [
-                    item["scores"][item["labels"].index(label)]
-                    for label in order_category
-                ]
-                if item is not None
-                else None
-            )
-            for item in parent_comment_content_vector_category
-        ],
-    }
-    sorted_comment_content_vector_category = {
-        "sequences": [item["sequence"] for item in comment_content_vector_category],
-        "labels": order_category,
-        "scores": [
-            [item["scores"][item["labels"].index(label)] for label in order_category]
-            for item in comment_content_vector_category
-        ],
-    }
+    # # カテゴリをベクトル化
+    # article_content_vector_category = zeroshot.main(
+    #     MODEL_NAME,
+    #     article_contents,
+    #     labels_category,
+    #     hypothesis_template_category,
+    # )
+    # parent_comment_content_vector_category = zeroshot.main(
+    #     MODEL_NAME,
+    #     parent_comment_contents,
+    #     labels_category,
+    #     hypothesis_template_category,
+    # )
+    # comment_content_vector_category = zeroshot.main(
+    #     MODEL_NAME,
+    #     comment_contents,
+    #     labels_category,
+    #     hypothesis_template_category,
+    # )
+    # # 出力を整形
+    # sorted_article_content_vector_category = {
+    #     "sequences": [item["sequence"] for item in article_content_vector_category],
+    #     "labels": order_category,
+    #     "scores": [
+    #         [item["scores"][item["labels"].index(label)] for label in order_category]
+    #         for item in article_content_vector_category
+    #     ],
+    # }
+    # sorted_parent_comment_content_vector_category = {
+    #     "sequences": [
+    #         item["sequence"] if item is not None else None
+    #         for item in parent_comment_content_vector_category
+    #     ],
+    #     "labels": order_category,
+    #     "scores": [
+    #         (
+    #             [
+    #                 item["scores"][item["labels"].index(label)]
+    #                 for label in order_category
+    #             ]
+    #             if item is not None
+    #             else None
+    #         )
+    #         for item in parent_comment_content_vector_category
+    #     ],
+    # }
+    # sorted_comment_content_vector_category = {
+    #     "sequences": [item["sequence"] for item in comment_content_vector_category],
+    #     "labels": order_category,
+    #     "scores": [
+    #         [item["scores"][item["labels"].index(label)] for label in order_category]
+    #         for item in comment_content_vector_category
+    #     ],
+    # }
     break
 
 # %%
