@@ -4,8 +4,9 @@ training_data_raw テーブルの文章をLLMで数値化して training_data_ve
 
 # %%
 import sys
-from collections import defaultdict
 from pathlib import Path
+
+from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parents[2]))
 
@@ -71,7 +72,7 @@ for user_id in user_ids:
 # ベクトル化してデータベースに保存
 order_sentiment = ["ポジティブ", "中立", "ネガティブ"]
 order_category = ["国内", "国際", "経済", "エンタメ", "スポーツ", "IT・科学"]
-for user_id, data in raw_data.items():
+for user_id, data in tqdm(raw_data.items()):
     (
         _,
         article_ids,
@@ -81,7 +82,7 @@ for user_id, data in raw_data.items():
         comment_ids,
         comment_contents,
         normalized_posted_times,
-    ) = map(list, zip(*data[:3]))
+    ) = map(list, zip(*data))
 
     # ネガポジをベクトル化
     article_content_vector_sentiment = zeroshot.main(
@@ -138,7 +139,7 @@ for user_id, data in raw_data.items():
         ],
     }
     # 結果をデータベースに保存
-    data_to_insert = [
+    data_to_insert_sentiment = [
         (
             user_id,
             article_id,
@@ -191,72 +192,127 @@ for user_id, data in raw_data.items():
                         d[0], d[1], d[2], d[5], d[6], d[7]
                     )
                 )
-                for d in data_to_insert
+                for d in data_to_insert_sentiment
             ]
         ),
         db_config,
         commit=True,
     )
 
-    # # カテゴリをベクトル化
-    # article_content_vector_category = zeroshot.main(
-    #     MODEL_NAME,
-    #     article_contents,
-    #     labels_category,
-    #     hypothesis_template_category,
-    # )
-    # parent_comment_content_vector_category = zeroshot.main(
-    #     MODEL_NAME,
-    #     parent_comment_contents,
-    #     labels_category,
-    #     hypothesis_template_category,
-    # )
-    # comment_content_vector_category = zeroshot.main(
-    #     MODEL_NAME,
-    #     comment_contents,
-    #     labels_category,
-    #     hypothesis_template_category,
-    # )
-    # # 出力を整形
-    # sorted_article_content_vector_category = {
-    #     "sequences": [item["sequence"] for item in article_content_vector_category],
-    #     "labels": order_category,
-    #     "scores": [
-    #         [item["scores"][item["labels"].index(label)] for label in order_category]
-    #         for item in article_content_vector_category
-    #     ],
-    # }
-    # sorted_parent_comment_content_vector_category = {
-    #     "sequences": [
-    #         item["sequence"] if item is not None else None
-    #         for item in parent_comment_content_vector_category
-    #     ],
-    #     "labels": order_category,
-    #     "scores": [
-    #         (
-    #             [
-    #                 item["scores"][item["labels"].index(label)]
-    #                 for label in order_category
-    #             ]
-    #             if item is not None
-    #             else None
-    #         )
-    #         for item in parent_comment_content_vector_category
-    #     ],
-    # }
-    # sorted_comment_content_vector_category = {
-    #     "sequences": [item["sequence"] for item in comment_content_vector_category],
-    #     "labels": order_category,
-    #     "scores": [
-    #         [item["scores"][item["labels"].index(label)] for label in order_category]
-    #         for item in comment_content_vector_category
-    #     ],
-    # }
-    break
+    # カテゴリをベクトル化
+    article_content_vector_category = zeroshot.main(
+        MODEL_NAME,
+        article_contents,
+        labels_category,
+        hypothesis_template_category,
+    )
+    parent_comment_content_vector_category = zeroshot.main(
+        MODEL_NAME,
+        parent_comment_contents,
+        labels_category,
+        hypothesis_template_category,
+    )
+    comment_content_vector_category = zeroshot.main(
+        MODEL_NAME,
+        comment_contents,
+        labels_category,
+        hypothesis_template_category,
+    )
+    # 出力を整形
+    sorted_article_content_vector_category = {
+        "sequences": [item["sequence"] for item in article_content_vector_category],
+        "labels": order_category,
+        "scores": [
+            [item["scores"][item["labels"].index(label)] for label in order_category]
+            for item in article_content_vector_category
+        ],
+    }
+    sorted_parent_comment_content_vector_category = {
+        "sequences": [
+            item["sequence"] if item is not None else None
+            for item in parent_comment_content_vector_category
+        ],
+        "labels": order_category,
+        "scores": [
+            (
+                [
+                    item["scores"][item["labels"].index(label)]
+                    for label in order_category
+                ]
+                if item is not None
+                else None
+            )
+            for item in parent_comment_content_vector_category
+        ],
+    }
+    sorted_comment_content_vector_category = {
+        "sequences": [item["sequence"] for item in comment_content_vector_category],
+        "labels": order_category,
+        "scores": [
+            [item["scores"][item["labels"].index(label)] for label in order_category]
+            for item in comment_content_vector_category
+        ],
+    }
+    # 結果をデータベースに保存
+    data_to_insert_category = [
+        (
+            user_id,
+            article_id,
+            article_content_vector,
+            parent_comment_id,
+            parent_comment_content_vector,
+            comment_id,
+            comment_content_vector,
+            normalized_posted_time,
+        )
+        for (
+            article_id,
+            article_content_vector,
+            parent_comment_id,
+            parent_comment_content_vector,
+            comment_id,
+            comment_content_vector,
+            normalized_posted_time,
+        ) in zip(
+            article_ids,
+            sorted_article_content_vector_category["scores"],
+            parent_comment_ids,
+            sorted_parent_comment_content_vector_category["scores"],
+            comment_ids,
+            sorted_comment_content_vector_category["scores"],
+            normalized_posted_times,
+        )
+    ]
+    execute_query(
+        f"""
+        INSERT INTO training_data_vectorized_category
+        (user_id, article_id, article_content_vector, parent_comment_id, parent_comment_content_vector, comment_id, comment_content_vector, normalized_posted_time)
+        VALUES
+        """
+        + ",".join(
+            [
+                (
+                    """('{}', '{}', ARRAY{}, '{}', ARRAY{}, '{}', ARRAY{}, '{}')""".format(
+                        d[0],
+                        d[1],
+                        d[2],
+                        d[3],
+                        d[4],
+                        d[5],
+                        d[6],
+                        d[7],
+                    )
+                    if d[3] is not None
+                    else """('{}', '{}', ARRAY{}, NULL, NULL, '{}', ARRAY{}, '{}')""".format(
+                        d[0], d[1], d[2], d[5], d[6], d[7]
+                    )
+                )
+                for d in data_to_insert_category
+            ]
+        ),
+        db_config,
+        commit=True,
+    )
 
-# %%
-print(sorted_article_content_vector_sentiment)
-print(sorted_parent_comment_content_vector_sentiment)
-print(sorted_comment_content_vector_sentiment)
 
 # %%
