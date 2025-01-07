@@ -42,3 +42,11 @@ psql -h postgresql_db -U kjqw -d yahoo_news
   - 取得された記事について、`scraping/article_scraper.py`で記事の内容を取得
   - 取得された記事について、`scraping/article_comment_scraper.py`でコメントを取得
     - 取得されたコメントのユーザーについて、`scraping/user_comment_scraper.py`でそのユーザーが過去にしたコメントを取得
+
+## normalized_posted_timeが同じ場合
+
+スクレイピングはコメントの新しい順にやっているので、`normalized_posted_time`が同じ場合は以下のようにして並び替えると古い順になる。
+
+```sql
+ORDER BY "normalized_posted_time" ASC, comment_id DESC
+```
