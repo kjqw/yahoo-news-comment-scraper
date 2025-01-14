@@ -68,3 +68,5 @@ finally:
 ## 削除された記事への対応
 
 ## training_data_rawテーブルのarticle_contentがNoneなのにtraining_data_vectorizedテーブルにデータが入っている
+
+Noneという文字列をLLMが分類しているぽい。データベース格納時にNullとしないといけない。
