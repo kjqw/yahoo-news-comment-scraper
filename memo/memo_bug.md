@@ -64,3 +64,7 @@ finally:
 ## デバイスによってGPUが使えない
 
 自宅デスクトップPC、研究室ノートPC1ではGPUが使えるが、研究室ノートPC2では使えなかった。研究室ノートPC2でコンテナをrebuildしたら研究室ノートPC2でGPUが使えるようになった。ほかのデバイスで使えるかは未確認。
+
+## 削除された記事への対応
+
+## training_data_rawテーブルのarticle_contentがNoneなのにtraining_data_vectorizedテーブルにデータが入っている
