@@ -52,14 +52,12 @@ user_ids
 for user_id in user_ids[5:]:
     df_user = df_training_data_vectorized_sentiment[
         (df_training_data_vectorized_sentiment["user_id"] == user_id)
-        # (df_training_data_vectorized_sentiment["user_id"] == user_id) & (df_training_data_vectorized_sentiment["parent_comment_id"].notna())
     ]
     article_content_vectors, parent_comment_content_vectors, comment_content_vectors = (
         df_user["article_content_vector"].values.tolist(),
         df_user["parent_comment_content_vector"].values.tolist(),
         df_user["comment_content_vector"].values.tolist(),
     )
-    # comment_content_posnegs = np.argmax(comment_content_vectors, axis=1)
     article_content_posnegs, parent_comment_content_posnegs, comment_content_posnegs = (
         [row.index(max(row)) for row in article_content_vectors],
         [
