@@ -49,7 +49,8 @@ df_training_data_vectorized_sentiment = pd.DataFrame(
 user_ids = df_training_data_vectorized_sentiment["user_id"].unique()
 user_ids
 # %%
-for user_id in user_ids[5:]:
+df_posnegs = {}
+for user_id in user_ids:
     df_user = df_training_data_vectorized_sentiment[
         (df_training_data_vectorized_sentiment["user_id"] == user_id)
     ]
@@ -66,8 +67,32 @@ for user_id in user_ids[5:]:
         ],
         [row.index(max(row)) for row in comment_content_vectors],
     )
-    break
-comment_content_posnegs
+    df_posnegs[user_id] = pd.DataFrame(
+        {
+            "article_content_posneg": article_content_posnegs,
+            "parent_comment_content_posneg": parent_comment_content_posnegs,
+            "comment_content_posneg": comment_content_posnegs,
+        }
+    )
+    # ポジティブを1、中立を0、ネガティブを-1に変換
+    mapping = {2: -1, 1: 0, 0: 1}
+
+    df_posnegs[user_id] = df_posnegs[user_id].applymap(lambda x: mapping.get(x, x))
+
 # %%
-parent_comment_content_posnegs
+df_posnegs.keys()
+# %%
+df_posnegs[41]
+# %%
+df_posnegs[41][
+    # df_posnegs[41]["parent_comment_content_posneg"].isnull()
+    df_posnegs[41]["article_content_posneg"].isnull()
+]
+# %%
+sns.scatterplot(
+    data=df_posnegs[41],
+    x=df_posnegs[41].index,
+    y="comment_content_posneg",
+    hue="article_content_posneg",
+)
 # %%
