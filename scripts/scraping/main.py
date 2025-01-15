@@ -60,6 +60,7 @@ unprocessed_articles = execute_query(
 )
 
 # %%
+# !削除された記事もスクレイピングしようとするため無駄な処理が発生する
 # 記事の本文を取得
 article_scraper.get_and_save_articles(
     db_config,
