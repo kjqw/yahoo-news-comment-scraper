@@ -140,27 +140,35 @@ def train(
 ) -> None:
     model = Model(state_dim, is_discrete).to(device)
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = RAdamScheduleFree(model.parameters(), lr=0.001)
 
-    for epoch in tqdm(range(num_epochs)):
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        for (
-            parent_article_state,
-            parent_comment_state,
-            previous_state,
-            next_state,
-        ) in dataloader:
+    model.train()
+    optimizer.train()
 
-            optimizer.zero_grad()
-            pred_state = model(
-                parent_article_state, parent_comment_state, previous_state
-            )
-            loss = criterion(pred_state, next_state)
-            loss.backward()
-            optimizer.step()
+    with tqdm(range(num_epochs)) as pbar:
+        for epoch in pbar:
+            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            for (
+                parent_article_state,
+                parent_comment_state,
+                previous_state,
+                next_state,
+            ) in dataloader:
+
+                optimizer.zero_grad()
+
+                pred_state = model(
+                    parent_article_state, parent_comment_state, previous_state
+                )
+                loss = criterion(pred_state, next_state)
+                loss.backward()
+
+                optimizer.step()
+
+                pbar.set_postfix({"loss": loss.item()})
 
 
-# %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 for user_id in user_ids:
     df_tmp = df[df["user_id"] == user_id]
@@ -199,8 +207,9 @@ for user_id in user_ids:
         dataset,
         device,
         state_dim=3,
-        is_discrete=True,
+        is_discrete=False,
         batch_size=8,
         num_epochs=100,
     )
+
 # %%
