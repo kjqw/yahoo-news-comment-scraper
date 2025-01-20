@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from schedulefree import RAdamScheduleFree
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from tqdm import tqdm
 
