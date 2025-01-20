@@ -72,3 +72,13 @@ finally:
 ## training_data_rawテーブルのarticle_contentがNoneなのにtraining_data_vectorizedテーブルにデータが入っている
 
 Noneという文字列をLLMが分類しているぽい。データベース格納時にNullとしないといけない。
+
+## 保存しようとしている文章にシングルクォーテーションが含まれていると保存できない
+
+`execute_query()`の引数を`query`と`params`にわければ解決するかもしれないが、`execute_query()`が使われている箇所が多いので変更が面倒である。
+
+```sh
+  9%|▉         | 263/2939 [13:16<2:24:16,  3.23s/it]
+データベースエラー: syntax error at or near "S"
+LINE 13: ...の戦績を残している。直近では2024年6月に『KNUCKLE'S 16』のキ...
+```
