@@ -3,21 +3,20 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from schedulefree import RAdamScheduleFree
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, random_split
 from tqdm import tqdm
 
+# データベースモジュールのパスをシステムパスに追加
 sys.path.append(str(Path(__file__).parents[2]))
 from db_manager import execute_query
 
 # %%
-# データベース設定
-db_config = {
+# データベース接続設定
+DATABASE_CONFIG = {
     "host": "postgresql_db",
     "database": "yahoo_news_restore",
     "user": "kjqw",
@@ -25,16 +24,15 @@ db_config = {
     "port": "5432",
 }
 
-# データ読み込み
-training_data_vectorized_sentiment = execute_query(
-    """
+# データベースからデータを取得
+TRAINING_DATA_QUERY = """
     SELECT *
     FROM training_data_vectorized_sentiment
-    """,
-    db_config,
-)
+"""
+training_data_vectorized_sentiment = execute_query(TRAINING_DATA_QUERY, DATABASE_CONFIG)
 
-column_names = [
+# カラム名を定義し、データをDataFrameに変換
+COLUMN_NAMES = [
     "user_id",
     "article_id",
     "article_content_vector",
@@ -44,32 +42,50 @@ column_names = [
     "comment_content_vector",
     "normalized_posted_time",
 ]
-df = pd.DataFrame(training_data_vectorized_sentiment, columns=column_names)
+df = pd.DataFrame(training_data_vectorized_sentiment, columns=COLUMN_NAMES)
 
-# %%
+# ユーザーIDの一覧を取得
 user_ids = df["user_id"].unique()
 
 
 # %%
-class Model(nn.Module):
+def split_dataset(dataset: TensorDataset, split_ratio: float):
     """
-    状態モデルクラス。
-    親記事、親コメント、前回の状態から次の状態を予測する。
+    データセットを訓練用と評価用に分割する。
+
+    Parameters
+    ----------
+    dataset : TensorDataset
+        分割対象のデータセット。
+    split_ratio : float
+        訓練データセットの割合（例: 0.8 で 80% が訓練用）。
+
+    Returns
+    -------
+    tuple[Subset, Subset]
+        訓練用データセットと評価用データセット。
+    """
+    train_size = int(len(dataset) * split_ratio)
+    val_size = len(dataset) - train_size
+    return random_split(dataset, [train_size, val_size])
+
+
+class StatePredictionModel(nn.Module):
+    """
+    状態予測モデル。
+    親記事、親コメント、前回の状態を入力として次の状態を予測する。
 
     Parameters
     ----------
     state_dim : int
         状態の次元数。
     is_discrete : bool
-        離散化するかどうか。
+        出力を離散化するかどうか。
     """
 
-    def __init__(self, state_dim, is_discrete):
-        super(Model, self).__init__()
-        # self.W_p = nn.Parameter(torch.randn(state_dim, state_dim)).to(device)
-        # self.W_q = nn.Parameter(torch.randn(state_dim, state_dim)).to(device)
-        # self.W_s = nn.Parameter(torch.randn(state_dim, state_dim)).to(device)
-        # self.b = nn.Parameter(torch.randn(state_dim, 1)).to(device)
+    def __init__(self, state_dim: int, is_discrete: bool):
+        super().__init__()
+        # 重み行列とバイアスを定義
         self.W_p = nn.Parameter(torch.randn(state_dim, state_dim))
         self.W_q = nn.Parameter(torch.randn(state_dim, state_dim))
         self.W_s = nn.Parameter(torch.randn(state_dim, state_dim))
@@ -99,17 +115,18 @@ class Model(nn.Module):
         torch.Tensor
             予測された次の状態。
         """
-
         if torch.all(
             parent_comment_state
             == torch.tensor([2, 2, 2], device=parent_comment_state.device)
         ):
+            # 親コメントが存在しない場合の状態予測
             pred_state = torch.tanh(
                 torch.matmul(parent_article_state, self.W_p.T)
                 + torch.matmul(previous_state, self.W_s.T)
                 + self.b.T
             )
         else:
+            # 親コメントが存在する場合の状態予測
             pred_state = torch.tanh(
                 torch.matmul(parent_article_state, self.W_p.T)
                 + torch.matmul(parent_comment_state, self.W_q.T)
@@ -118,6 +135,7 @@ class Model(nn.Module):
             )
 
         if self.is_discrete:
+            # 出力を離散化
             pred_state = torch.where(
                 pred_state > 0.5,
                 torch.tensor(1.0, dtype=torch.float32, device=pred_state.device),
@@ -131,133 +149,165 @@ class Model(nn.Module):
         return pred_state
 
 
-def train(
-    dataset: TensorDataset,
-    model: Model,
-    batch_size: int = 8,
+def train_and_evaluate(
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    model: StatePredictionModel,
     num_epochs: int = 1000,
-) -> list[float]:
+) -> tuple[list[float], list[float]]:
     """
-    モデルを学習し、損失履歴を返す。
+    モデルの訓練と評価を行い、損失履歴を返す。
 
     Parameters
     ----------
-    dataset : TensorDataset
-        学習用データセット。
-    model : Model
+    train_loader : DataLoader
+        訓練用データローダ。
+    val_loader : DataLoader
+        評価用データローダ。
+    model : StatePredictionModel
         学習対象のモデル。
-    batch_size : int, optional
-        バッチサイズ。
     num_epochs : int, optional
-        エポック数。
+        学習エポック数。
 
     Returns
     -------
-    list[float]
-        各エポックの損失値のリスト。
+    tuple[list[float], list[float]]
+        訓練損失と評価損失の履歴。
     """
     criterion = nn.MSELoss()
     optimizer = RAdamScheduleFree(model.parameters(), lr=0.001)
 
-    model.train()
-    optimizer.train()
+    train_loss_history = []
+    val_loss_history = []
 
-    loss_history = []
+    model.train()  # モデルを訓練モードに設定
+    optimizer.train()  # オプティマイザを訓練モードに設定
+    # 学習率スケジューリングを勝手にやってくれるらしい
+    # https://zenn.dev/dena/articles/6f04641801b387
 
-    with tqdm(range(num_epochs)) as pbar:
-        for epoch in pbar:
-            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-            epoch_loss = 0.0  # エポック内の累積損失
+    with tqdm(range(num_epochs)) as progress_bar:
+        for epoch in progress_bar:
+            epoch_train_loss = 0.0
 
+            # 訓練データのミニバッチ処理
             for (
                 parent_article_state,
                 parent_comment_state,
                 previous_state,
                 next_state,
-            ) in dataloader:
+            ) in train_loader:
                 optimizer.zero_grad()
-
                 pred_state = model(
                     parent_article_state, parent_comment_state, previous_state
                 )
                 loss = criterion(pred_state, next_state)
                 loss.backward()
-
                 optimizer.step()
+                epoch_train_loss += loss.item()
 
-                epoch_loss += loss.item()
+            # エポックごとの訓練損失を記録
+            average_train_loss = epoch_train_loss / len(train_loader)
+            train_loss_history.append(average_train_loss)
 
-            # 平均損失を計算して履歴に記録
-            average_loss = epoch_loss / len(dataloader)
-            loss_history.append(average_loss)
+            # 評価モードに切り替えて評価データの損失を計算
+            model.eval()
+            with torch.no_grad():
+                epoch_val_loss = 0.0
+                for (
+                    parent_article_state,
+                    parent_comment_state,
+                    previous_state,
+                    next_state,
+                ) in val_loader:
+                    pred_state = model(
+                        parent_article_state, parent_comment_state, previous_state
+                    )
+                    loss = criterion(pred_state, next_state)
+                    epoch_val_loss += loss.item()
 
-            pbar.set_postfix({"loss": average_loss})
+                # エポックごとの評価損失を記録
+                average_val_loss = epoch_val_loss / len(val_loader)
+                val_loss_history.append(average_val_loss)
 
-    return loss_history
+            model.train()  # 訓練モードに戻す
+            progress_bar.set_postfix(
+                {"train_loss": average_train_loss, "val_loss": average_val_loss}
+            )
+
+    return train_loss_history, val_loss_history
 
 
 # %%
-state_dim = 3
-is_discrete = False
-batch_size = 8
-num_epochs = 500
+# モデルの設定と学習
+STATE_DIM = 3
+IS_DISCRETE = False
+BATCH_SIZE = 8
+NUM_EPOCHS = 500
+SPLIT_RATIO = 0.8
 
-model_path = Path(__file__).parent / "data"
-loss_histories_path = model_path / "loss_histories.json"
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# モデルと損失履歴を保存するディレクトリ
+MODEL_PATH = Path(__file__).parent / "data"
+LOSS_HISTORIES_PATH = MODEL_PATH / "loss_histories.json"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# 全ユーザーのデータに対してモデルを訓練
 loss_histories = {}
-for user_id in user_ids:
-    df_tmp = df[df["user_id"] == user_id]
-    df_sorted = df_tmp.sort_values(
-        by=["normalized_posted_time", "comment_id"],
-        ascending=[True, False],
-    )  # 投稿時間が同じ場合はcomment_idが新しい順にソート
 
+for user_id in user_ids:
+    # ユーザーごとのデータを取得し、時間順に並び替え
+    user_data = df[df["user_id"] == user_id]
+    user_data_sorted = user_data.sort_values(
+        by=["normalized_posted_time", "comment_id"], ascending=[True, False]
+    )
+
+    # データセットの作成
     dataset = TensorDataset(
         torch.tensor(
-            [i for i in df_sorted["article_content_vector"][:-1]],
+            [i for i in user_data_sorted["article_content_vector"][:-1]],
             dtype=torch.float32,
-            requires_grad=True,
-        ).to(device),
+        ).to(DEVICE),
         torch.tensor(
             [
                 i if i is not None else [2, 2, 2]
-                for i in df_sorted["parent_comment_content_vector"][:-1]
+                for i in user_data_sorted["parent_comment_content_vector"][:-1]
             ],
             dtype=torch.float32,
-            requires_grad=True,
-        ).to(device),
+        ).to(DEVICE),
         torch.tensor(
-            [i for i in df_sorted["comment_content_vector"][:-1]],
+            [i for i in user_data_sorted["comment_content_vector"][:-1]],
             dtype=torch.float32,
-            requires_grad=True,
-        ).to(device),
+        ).to(DEVICE),
         torch.tensor(
-            [i for i in df_sorted["comment_content_vector"][1:]],
+            [i for i in user_data_sorted["comment_content_vector"][1:]],
             dtype=torch.float32,
-            requires_grad=True,
-        ).to(device),
+        ).to(DEVICE),
     )
 
-    model = Model(state_dim, is_discrete).to(device)
+    # データセットを訓練用と評価用に分割
+    train_dataset, val_dataset = split_dataset(dataset, SPLIT_RATIO)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    # 学習
-    loss_histories[user_id] = train(
-        dataset,
-        model,
-        batch_size=batch_size,
-        num_epochs=num_epochs,
+    # モデルを初期化
+    model = StatePredictionModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
+
+    # モデルを訓練し、損失履歴を取得
+    train_loss, val_loss = train_and_evaluate(
+        train_loader, val_loader, model, num_epochs=NUM_EPOCHS
     )
 
-    # モデルの保存
-    torch.save(model.state_dict(), model_path / f"model_{user_id}.pt")
+    # 各ユーザーの損失履歴を記録
+    loss_histories[user_id] = {"train_loss": train_loss, "val_loss": val_loss}
+
+    # モデルを保存
+    torch.save(model.state_dict(), MODEL_PATH / f"model_{user_id}.pt")
 
 # %%
+# 損失履歴をJSONファイルとして保存
 # loss_historiesのキーを文字列に変換
 loss_histories_str_keys = {str(key): value for key, value in loss_histories.items()}
 
-# ファイルに保存
-with open(loss_histories_path, "w") as f:
+with open(LOSS_HISTORIES_PATH, "w") as f:
     json.dump(loss_histories_str_keys, f)
 
 # %%
