@@ -1,4 +1,5 @@
 # %%
+import json
 import sys
 from pathlib import Path
 
@@ -8,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from schedulefree import RAdamScheduleFree
-from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parents[2]))
@@ -131,31 +132,49 @@ class Model(nn.Module):
 
 
 def train(
-    dataset: Dataset,
-    device: torch.device,
-    state_dim: int,
-    is_discrete: bool = True,
+    dataset: TensorDataset,
+    model: Model,
     batch_size: int = 8,
-    num_epochs: int = 100,
-) -> None:
-    model = Model(state_dim, is_discrete).to(device)
+    num_epochs: int = 1000,
+) -> list[float]:
+    """
+    モデルを学習し、損失履歴を返す。
+
+    Parameters
+    ----------
+    dataset : TensorDataset
+        学習用データセット。
+    model : Model
+        学習対象のモデル。
+    batch_size : int, optional
+        バッチサイズ。
+    num_epochs : int, optional
+        エポック数。
+
+    Returns
+    -------
+    list[float]
+        各エポックの損失値のリスト。
+    """
     criterion = nn.MSELoss()
-    # optimizer = optim.Adam(model.parameters(), lr=0.001)
     optimizer = RAdamScheduleFree(model.parameters(), lr=0.001)
 
     model.train()
     optimizer.train()
 
+    loss_history = []
+
     with tqdm(range(num_epochs)) as pbar:
         for epoch in pbar:
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            epoch_loss = 0.0  # エポック内の累積損失
+
             for (
                 parent_article_state,
                 parent_comment_state,
                 previous_state,
                 next_state,
             ) in dataloader:
-
                 optimizer.zero_grad()
 
                 pred_state = model(
@@ -166,10 +185,27 @@ def train(
 
                 optimizer.step()
 
-                pbar.set_postfix({"loss": loss.item()})
+                epoch_loss += loss.item()
+
+            # 平均損失を計算して履歴に記録
+            average_loss = epoch_loss / len(dataloader)
+            loss_history.append(average_loss)
+
+            pbar.set_postfix({"loss": average_loss})
+
+    return loss_history
 
 
+# %%
+state_dim = 3
+is_discrete = False
+batch_size = 8
+num_epochs = 500
+
+model_path = Path(__file__).parent / "data"
+loss_histories_path = model_path / "loss_histories.json"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+loss_histories = {}
 for user_id in user_ids:
     df_tmp = df[df["user_id"] == user_id]
     df_sorted = df_tmp.sort_values(
@@ -203,13 +239,25 @@ for user_id in user_ids:
         ).to(device),
     )
 
-    train(
+    model = Model(state_dim, is_discrete).to(device)
+
+    # 学習
+    loss_histories[user_id] = train(
         dataset,
-        device,
-        state_dim=3,
-        is_discrete=False,
-        batch_size=8,
-        num_epochs=100,
+        model,
+        batch_size=batch_size,
+        num_epochs=num_epochs,
     )
+
+    # モデルの保存
+    torch.save(model.state_dict(), model_path / f"model_{user_id}.pt")
+
+# %%
+# loss_historiesのキーを文字列に変換
+loss_histories_str_keys = {str(key): value for key, value in loss_histories.items()}
+
+# ファイルに保存
+with open(loss_histories_path, "w") as f:
+    json.dump(loss_histories_str_keys, f)
 
 # %%
