@@ -1,6 +1,7 @@
 # %%
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -245,10 +246,15 @@ BATCH_SIZE = 8
 NUM_EPOCHS = 500
 SPLIT_RATIO = 0.8
 
-# モデルと損失履歴を保存するディレクトリ
-MODEL_PATH = Path(__file__).parent / "data"
-LOSS_HISTORIES_PATH = MODEL_PATH / "loss_histories.json"
+# モデルと損失の履歴を保存するディレクトリ
+TIME_NOW = datetime.now().strftime("%Y%m%d%H%M%S")
+DATA_PATH = Path(__file__).parent / f"data/{TIME_NOW}"
+MODEL_PATH = DATA_PATH / f"models"
+LOSS_HISTORIES_PATH = DATA_PATH / "loss_histories.json"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# データ保存用のディレクトリを作成
+MODEL_PATH.mkdir(parents=True, exist_ok=True)
 
 # 全ユーザーのデータに対してモデルを訓練
 loss_histories = {}
