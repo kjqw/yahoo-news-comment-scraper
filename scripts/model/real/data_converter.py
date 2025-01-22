@@ -17,7 +17,7 @@ from llm import zeroshot
 # データベースの初期化
 db_config = {
     "host": "postgresql_db",
-    "database": "yahoo_news_restore",
+    "database": "yahoo_news_modeling_1",
     "user": "kjqw",
     "password": "1122",
     "port": "5432",
