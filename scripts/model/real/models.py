@@ -73,6 +73,7 @@ class DiffModel(nn.Module):
     """
     状態予測モデル。
     親記事、親コメント、前回の状態を入力として次の状態を予測する。
+    自分と相手の状態の差分を入力として次の状態を予測する。
 
     Parameters
     ----------
@@ -97,23 +98,6 @@ class DiffModel(nn.Module):
         parent_comment_state: torch.Tensor,
         previous_state: torch.Tensor,
     ):
-        """
-        順伝播の計算を行う。
-
-        Parameters
-        ----------
-        parent_article_state : torch.Tensor
-            親記事の状態。
-        parent_comment_state : torch.Tensor
-            親コメントの状態。Noneだとtorchで扱いにくいので、Noneのときは[0, 0, 0]を入力することにした。
-        previous_state : torch.Tensor
-            前回の状態。
-
-        Returns
-        -------
-        torch.Tensor
-            予測された次の状態。
-        """
         pred_state = torch.tanh(
             torch.matmul(parent_article_state - previous_state, self.W_p.T)
             + torch.matmul(parent_comment_state - previous_state, self.W_q.T)
@@ -178,23 +162,6 @@ class NNModel(nn.Module):
         parent_comment_state: torch.Tensor,
         previous_state: torch.Tensor,
     ) -> torch.Tensor:
-        """
-        順伝播の計算を行う。
-
-        Parameters
-        ----------
-        parent_article_state : torch.Tensor
-            親記事の状態。
-        parent_comment_state : torch.Tensor
-            親コメントの状態。
-        previous_state : torch.Tensor
-            前回の状態。
-
-        Returns
-        -------
-        torch.Tensor
-            予測された次の状態。
-        """
         # 入力を結合
         x = torch.cat(
             [parent_article_state, parent_comment_state, previous_state], dim=-1
