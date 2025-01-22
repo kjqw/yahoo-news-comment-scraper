@@ -19,7 +19,7 @@ from db_manager import execute_query
 # データベース接続設定
 DATABASE_CONFIG = {
     "host": "postgresql_db",
-    "database": "yahoo_news_restore",
+    "database": "yahoo_news_modeling_1",
     "user": "kjqw",
     "password": "1122",
     "port": "5432",
@@ -157,7 +157,7 @@ def train_and_evaluate(
     num_epochs: int = 1000,
 ) -> tuple[list[float], list[float]]:
     """
-    モデルの訓練と評価を行い、損失履歴を返す。
+    モデルの訓練と評価を行い、損失の履歴を返す。
 
     Parameters
     ----------
@@ -245,19 +245,29 @@ IS_DISCRETE = False
 BATCH_SIZE = 8
 NUM_EPOCHS = 500
 SPLIT_RATIO = 0.8
+SETTINGS = {
+    "state_dim": STATE_DIM,
+    "is_discrete": IS_DISCRETE,
+    "batch_size": BATCH_SIZE,
+    "num_epochs": NUM_EPOCHS,
+    "split_ratio": SPLIT_RATIO,
+    "database_config": DATABASE_CONFIG,
+}
 
 # モデルと損失の履歴を保存するディレクトリ
 TIME_NOW = datetime.now().strftime("%Y%m%d%H%M%S")
 DATA_PATH = Path(__file__).parent / f"data/{TIME_NOW}"
 MODEL_PATH = DATA_PATH / f"models"
-LOSS_HISTORIES_PATH = DATA_PATH / "loss_histories.json"
+LOSS_HISTORIES_PATH = DATA_PATH / "loss_histories"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # データ保存用のディレクトリを作成
 MODEL_PATH.mkdir(parents=True, exist_ok=True)
+LOSS_HISTORIES_PATH.mkdir(parents=True, exist_ok=True)
 
-# 全ユーザーのデータに対してモデルを訓練
-loss_histories = {}
+# 設定を保存
+with open(DATA_PATH / "settings.json", "w") as f:
+    json.dump(SETTINGS, f, indent=4)
 
 for user_id in user_ids:
     # ユーザーごとのデータを取得し、時間順に並び替え
@@ -297,23 +307,16 @@ for user_id in user_ids:
     # モデルを初期化
     model = StatePredictionModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
 
-    # モデルを訓練し、損失履歴を取得
+    # モデルを訓練し、損失の履歴を取得
     train_loss, val_loss = train_and_evaluate(
         train_loader, val_loader, model, num_epochs=NUM_EPOCHS
     )
 
-    # 各ユーザーの損失履歴を記録
-    loss_histories[user_id] = {"train_loss": train_loss, "val_loss": val_loss}
-
+    # 損失の履歴を保存
+    with open(LOSS_HISTORIES_PATH / f"loss_histories_{user_id}.json", "w") as f:
+        json.dump({"train_loss": train_loss, "val_loss": val_loss}, f, indent=4)
     # モデルを保存
     torch.save(model.state_dict(), MODEL_PATH / f"model_{user_id}.pt")
 
-# %%
-# 損失履歴をJSONファイルとして保存
-# loss_historiesのキーを文字列に変換
-loss_histories_str_keys = {str(key): value for key, value in loss_histories.items()}
-
-with open(LOSS_HISTORIES_PATH, "w") as f:
-    json.dump(loss_histories_str_keys, f)
 
 # %%
