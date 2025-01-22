@@ -230,6 +230,9 @@ class NNModel(nn.Module):
         # 出力層の計算
         pred_state = self.output_layer(x)
 
+        # 出力を softmax で正規化し、確率分布を生成
+        pred_state = torch.softmax(pred_state, dim=-1)
+
         if self.is_discrete:
             # 出力を 1-hot ベクトルに変換
             one_hot = torch.zeros_like(pred_state)
