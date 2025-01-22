@@ -38,7 +38,7 @@ class LinearModel(nn.Module):
         parent_article_state : torch.Tensor
             親記事の状態。
         parent_comment_state : torch.Tensor
-            親コメントの状態。Noneだとtorchで扱いにくいので、Noneのときは[2, 2, 2]を入力することにした。
+            親コメントの状態。Noneだとtorchで扱いにくいので、Noneのときは[0, 0, 0]を入力することにした。
         previous_state : torch.Tensor
             前回の状態。
 
@@ -47,24 +47,12 @@ class LinearModel(nn.Module):
         torch.Tensor
             予測された次の状態。
         """
-        if torch.all(
-            parent_comment_state
-            == torch.tensor([2, 2, 2], device=parent_comment_state.device)
-        ):
-            # 親コメントが存在しない場合の状態予測
-            pred_state = torch.tanh(
-                torch.matmul(parent_article_state, self.W_p.T)
-                + torch.matmul(previous_state, self.W_s.T)
-                + self.b.T
-            )
-        else:
-            # 親コメントが存在する場合の状態予測
-            pred_state = torch.tanh(
-                torch.matmul(parent_article_state, self.W_p.T)
-                + torch.matmul(parent_comment_state, self.W_q.T)
-                + torch.matmul(previous_state, self.W_s.T)
-                + self.b.T
-            )
+        pred_state = torch.tanh(
+            torch.matmul(parent_article_state, self.W_p.T)
+            + torch.matmul(parent_comment_state, self.W_q.T)
+            + torch.matmul(previous_state, self.W_s.T)
+            + self.b.T
+        )
 
         if self.is_discrete:
             # 出力を離散化
@@ -117,7 +105,7 @@ class DiffModel(nn.Module):
         parent_article_state : torch.Tensor
             親記事の状態。
         parent_comment_state : torch.Tensor
-            親コメントの状態。Noneだとtorchで扱いにくいので、Noneのときは[2, 2, 2]を入力することにした。
+            親コメントの状態。Noneだとtorchで扱いにくいので、Noneのときは[0, 0, 0]を入力することにした。
         previous_state : torch.Tensor
             前回の状態。
 
@@ -126,24 +114,12 @@ class DiffModel(nn.Module):
         torch.Tensor
             予測された次の状態。
         """
-        if torch.all(
-            parent_comment_state
-            == torch.tensor([2, 2, 2], device=parent_comment_state.device)
-        ):
-            # 親コメントが存在しない場合の状態予測
-            pred_state = torch.tanh(
-                torch.matmul(parent_article_state - previous_state, self.W_p.T)
-                + torch.matmul(previous_state, self.W_s.T)
-                + self.b.T
-            )
-        else:
-            # 親コメントが存在する場合の状態予測
-            pred_state = torch.tanh(
-                torch.matmul(parent_article_state - previous_state, self.W_p.T)
-                + torch.matmul(parent_comment_state - previous_state, self.W_q.T)
-                + torch.matmul(previous_state, self.W_s.T)
-                + self.b.T
-            )
+        pred_state = torch.tanh(
+            torch.matmul(parent_article_state - previous_state, self.W_p.T)
+            + torch.matmul(parent_comment_state - previous_state, self.W_q.T)
+            + torch.matmul(previous_state, self.W_s.T)
+            + self.b.T
+        )
 
         if self.is_discrete:
             # 出力を離散化

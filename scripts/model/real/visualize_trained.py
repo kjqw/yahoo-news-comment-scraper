@@ -92,7 +92,7 @@ for user_id in user_ids:
         parent_comment_content_vector = (
             torch.tensor(parent_comment_content_vector, dtype=torch.float32)
             if parent_comment_content_vector is not None
-            else torch.tensor([0, 1, 0], dtype=torch.float32)
+            else torch.tensor([0, 0, 0], dtype=torch.float32)
         )
         comment_content_vector = torch.tensor(
             comment_content_vector, dtype=torch.float32
