@@ -5,6 +5,7 @@ data/
 db_backups/
 db_data/
 html/
+images/
 orders/
 
 tmp*
