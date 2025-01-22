@@ -63,15 +63,14 @@ user_ids
 value_counts
 # %%
 # DATA_PATH = "data/20250122125914"
-DATA_PATH = "data/20250122144224"
+# DATA_PATH = "data/20250122144224"
+DATA_PATH = "data/20250122151749"
 
 fig_ax_dict = {}
 for user_id in user_ids:
-
     # モデルを読み込む
     model = torch.load(f"{DATA_PATH}/models/model_{user_id}.pt")
     model.to("cpu")
-
     model.eval()
 
     df_user = df[df["user_id"] == user_id]
@@ -94,7 +93,7 @@ for user_id in user_ids:
         parent_comment_content_vector = (
             torch.tensor(parent_comment_content_vector, dtype=torch.float32)
             if parent_comment_content_vector is not None
-            else torch.tensor([2, 2, 2], dtype=torch.float32)
+            else torch.tensor([0, 1, 0], dtype=torch.float32)
         )
         comment_content_vector = torch.tensor(
             comment_content_vector, dtype=torch.float32
@@ -129,16 +128,26 @@ for user_id in user_ids:
     ax.set_ylim(-1.1, 1.1)
     ax.tick_params(axis="x", rotation=45)
 
+    # 実測値のプロット
     ax.plot(
         df_user["normalized_posted_time"],
         df_user["comment_sentiment_scalar"],
         label="actual",
     )
-    ax.plot(
-        df_user["normalized_posted_time"][1:],
-        df_user["pred_state_scalar"][1:],
-        label="predicted",
-    )
+    # 予測値のプロット
+    for i in range(1, len(df_user)):
+        ax.plot(
+            [
+                df_user["normalized_posted_time"].iloc[i - 1],
+                df_user["normalized_posted_time"].iloc[i],
+            ],
+            [
+                df_user["comment_sentiment_scalar"].iloc[i - 1],
+                df_user["pred_state_scalar"].iloc[i],
+            ],
+            color="red",
+            linestyle="--",
+        )
 
     ax.legend()
 
