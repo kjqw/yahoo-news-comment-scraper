@@ -183,7 +183,7 @@ class NNModel(nn.Module):
         self.hidden_dims = hidden_dims
 
         # 入力次元の初期化
-        input_dim = state_dim
+        input_dim = state_dim * 3
 
         # 隠れ層の定義
         layers = []
