@@ -7,8 +7,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 import torch.nn as nn
-from models.model_diff import DiffModel
-from models.model_linear import LinearModel
+from models import DiffModel, LinearModel, NNModel
 from schedulefree import RAdamScheduleFree
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from tqdm import tqdm
@@ -89,7 +88,7 @@ def split_dataset(dataset: TensorDataset, split_ratio: float):
 def train_and_evaluate(
     train_loader: DataLoader,
     val_loader: DataLoader,
-    model: LinearModel,
+    model: nn.Module,
     num_epochs: int = 1000,
 ) -> tuple[list[float], list[float]]:
     """
@@ -238,7 +237,8 @@ for user_id in user_ids:
 
     # モデルを初期化
     # model = LinearModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
-    model = DiffModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
+    # model = DiffModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
+    model = NNModel(STATE_DIM, IS_DISCRETE, [128, 128]).to(DEVICE)
 
     # モデルを訓練し、損失の履歴を取得
     train_loss, val_loss = train_and_evaluate(

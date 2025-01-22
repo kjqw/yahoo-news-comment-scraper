@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pandas as pd
 import torch
-from models.model_linear import LinearModel
 from tqdm import tqdm
 
 # データベースモジュールのパスをシステムパスに追加
