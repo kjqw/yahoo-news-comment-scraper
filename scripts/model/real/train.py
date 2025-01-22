@@ -252,6 +252,8 @@ for user_id in user_ids:
     torch.save(model, MODEL_PATH / f"model_{user_id}.pt")
 
 SETTINGS["model"] = model.__class__.__name__
+SETTINGS["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 # 設定を保存
 with open(DATA_PATH / "settings.json", "w") as f:
     json.dump(SETTINGS, f, indent=4)
