@@ -146,6 +146,7 @@ for user_id in user_ids:
     #         ],
     #         color="red",
     #         linestyle="--",
+    #         label="predicted",
     #     )
     ax.plot(
         df_user["normalized_posted_time"][1:],
