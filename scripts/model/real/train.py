@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 import torch.nn as nn
-from models.linear_model import LinearModel
+from models.model_linear import LinearModel
 from schedulefree import RAdamScheduleFree
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from tqdm import tqdm
