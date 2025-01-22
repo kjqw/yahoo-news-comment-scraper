@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 import torch.nn as nn
+from models.model_diff import DiffModel
 from models.model_linear import LinearModel
 from schedulefree import RAdamScheduleFree
 from torch.utils.data import DataLoader, TensorDataset, random_split
@@ -200,10 +201,6 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_PATH.mkdir(parents=True, exist_ok=True)
 LOSS_HISTORIES_PATH.mkdir(parents=True, exist_ok=True)
 
-# 設定を保存
-with open(DATA_PATH / "settings.json", "w") as f:
-    json.dump(SETTINGS, f, indent=4)
-
 for user_id in user_ids:
     # ユーザーごとのデータを取得し、時間順に並び替え
     user_data = df[df["user_id"] == user_id]
@@ -240,7 +237,8 @@ for user_id in user_ids:
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # モデルを初期化
-    model = LinearModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
+    # model = LinearModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
+    model = DiffModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
 
     # モデルを訓練し、損失の履歴を取得
     train_loss, val_loss = train_and_evaluate(
@@ -251,7 +249,12 @@ for user_id in user_ids:
     with open(LOSS_HISTORIES_PATH / f"loss_histories_{user_id}.json", "w") as f:
         json.dump({"train_loss": train_loss, "val_loss": val_loss}, f, indent=4)
     # モデルを保存
-    torch.save(model.state_dict(), MODEL_PATH / f"model_{user_id}.pth")
+    torch.save(model, MODEL_PATH / f"model_{user_id}.pt")
+    break
 
+SETTINGS["model"] = model.__class__.__name__
+# 設定を保存
+with open(DATA_PATH / "settings.json", "w") as f:
+    json.dump(SETTINGS, f, indent=4)
 
 # %%

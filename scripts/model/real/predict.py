@@ -62,7 +62,8 @@ user_ids
 # %%
 value_counts
 # %%
-DATA_PATH = "data/20250122125914"
+# DATA_PATH = "data/20250122125914"
+DATA_PATH = "data/20250122144224"
 USER_ID = user_ids[0]
 
 # 設定を読み込む
@@ -71,10 +72,13 @@ with open(f"{DATA_PATH}/settings.json") as f:
 state_dim, is_discrete = settings["state_dim"], settings["is_discrete"]
 
 # %%
-model = LinearModel(state_dim, is_discrete)
-model.load_state_dict(torch.load(f"{DATA_PATH}/models/model_{USER_ID}.pth"))
+model = torch.load(f"{DATA_PATH}/models/model_{USER_ID}.pt")
+model.to("cpu")
+
 model.eval()
 
+# %%
+model.__class__.__name__
 # %%
 df = df[df["user_id"] == USER_ID]
 
@@ -109,5 +113,4 @@ for (
 
 df["pred_state"] = pred_states
 df
-# %%
 # %%
