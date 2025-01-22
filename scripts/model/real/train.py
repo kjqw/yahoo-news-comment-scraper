@@ -215,7 +215,7 @@ for user_id in user_ids:
         ).to(DEVICE),
         torch.tensor(
             [
-                i if i is not None else [2, 2, 2]
+                i if i is not None else [0, 0, 0]
                 for i in user_data_sorted["parent_comment_content_vector"][:-1]
             ],
             dtype=torch.float32,
