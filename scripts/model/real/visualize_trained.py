@@ -7,7 +7,6 @@ from pathlib import Path
 import pandas as pd
 import torch
 from matplotlib import pyplot as plt
-from models.model_linear import LinearModel
 
 # データベースモジュールのパスをシステムパスに追加
 sys.path.append(str(Path(__file__).parents[2]))
@@ -113,11 +112,11 @@ for user_id in user_ids:
 
     df_user["comment_sentiment_scalar"] = df_user["comment_content_vector"].apply(
         lambda vec: float(vec[0] - vec[2])
-        # lambda vec: float(vec[2])
+        # lambda vec: float(vec[1])
     )
     df_user["pred_state_scalar"] = df_user["pred_state"].apply(
         lambda vec: float(vec[0] - vec[2])
-        # lambda vec: float(vec[2])
+        # lambda vec: float(vec[1])
     )
 
     fig, ax = plt.subplots()
@@ -135,19 +134,24 @@ for user_id in user_ids:
         label="actual",
     )
     # 予測値のプロット
-    for i in range(1, len(df_user)):
-        ax.plot(
-            [
-                df_user["normalized_posted_time"].iloc[i - 1],
-                df_user["normalized_posted_time"].iloc[i],
-            ],
-            [
-                df_user["comment_sentiment_scalar"].iloc[i - 1],
-                df_user["pred_state_scalar"].iloc[i],
-            ],
-            color="red",
-            linestyle="--",
-        )
+    # for i in range(1, len(df_user)):
+    #     ax.plot(
+    #         [
+    #             df_user["normalized_posted_time"].iloc[i - 1],
+    #             df_user["normalized_posted_time"].iloc[i],
+    #         ],
+    #         [
+    #             df_user["comment_sentiment_scalar"].iloc[i - 1],
+    #             df_user["pred_state_scalar"].iloc[i],
+    #         ],
+    #         color="red",
+    #         linestyle="--",
+    #     )
+    ax.plot(
+        df_user["normalized_posted_time"][1:],
+        df_user["pred_state_scalar"][1:],
+        label="predicted",
+    )
 
     ax.legend()
 
