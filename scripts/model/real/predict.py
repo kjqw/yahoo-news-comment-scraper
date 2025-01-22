@@ -66,15 +66,8 @@ value_counts
 DATA_PATH = "data/20250122144224"
 USER_ID = user_ids[0]
 
-# 設定を読み込む
-with open(f"{DATA_PATH}/settings.json") as f:
-    settings = json.load(f)
-state_dim, is_discrete = settings["state_dim"], settings["is_discrete"]
-
-# %%
 model = torch.load(f"{DATA_PATH}/models/model_{USER_ID}.pt")
 model.to("cpu")
-
 model.eval()
 
 # %%
