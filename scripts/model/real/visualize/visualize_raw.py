@@ -2,11 +2,8 @@
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
-from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parents[3]))
 
@@ -16,7 +13,7 @@ from db_manager import execute_query
 # データベースの初期化
 db_config = {
     "host": "postgresql_db",
-    "database": "yahoo_news_restore",
+    "database": "yahoo_news_modeling_1",
     "user": "kjqw",
     "password": "1122",
     "port": "5432",
@@ -45,54 +42,57 @@ column_names = [
 df_training_data_vectorized_sentiment = pd.DataFrame(
     training_data_vectorized_sentiment, columns=column_names
 )
+
+
 # %%
-user_ids = df_training_data_vectorized_sentiment["user_id"].unique()
-user_ids
+def vec2scalar(vec: list) -> float:
+    """
+    ポジティブ・中立・ネガティブの確率を値に持つ、和が1の3次元ベクトルを受け取り、1次元のスカラー値に変換する。
+
+    Parameters
+    ----------
+    vec : list
+        ポジティブ・中立・ネガティブの確率を値に持つ、和が1の3次元ベクトル。
+
+    Returns
+    -------
+    float
+        スカラー値。
+
+    Examples
+    --------
+    >>> vec2scalar([x, y, z])
+    x - z
+    >>> vec2scalar([0.3, 0.6, 0.1])
+    0.2
+    """
+    return float(vec[0] - vec[2])
+
+
 # %%
-df_posnegs = {}
+df_training_data_vectorized_sentiment["comment_sentiment_scalar"] = (
+    df_training_data_vectorized_sentiment["comment_content_vector"].apply(vec2scalar)
+)
+# %%
+value_counts = df_training_data_vectorized_sentiment["user_id"].value_counts()
+filtered_users = value_counts[value_counts >= 100]
+user_ids = filtered_users.index
+
+# %%
+value_counts
+# %%
 for user_id in user_ids:
     df_user = df_training_data_vectorized_sentiment[
-        (df_training_data_vectorized_sentiment["user_id"] == user_id)
+        df_training_data_vectorized_sentiment["user_id"] == user_id
     ]
-    article_content_vectors, parent_comment_content_vectors, comment_content_vectors = (
-        df_user["article_content_vector"].values.tolist(),
-        df_user["parent_comment_content_vector"].values.tolist(),
-        df_user["comment_content_vector"].values.tolist(),
-    )
-    article_content_posnegs, parent_comment_content_posnegs, comment_content_posnegs = (
-        [row.index(max(row)) for row in article_content_vectors],
-        [
-            row.index(max(row)) if row else None
-            for row in parent_comment_content_vectors
-        ],
-        [row.index(max(row)) for row in comment_content_vectors],
-    )
-    df_posnegs[user_id] = pd.DataFrame(
-        {
-            "article_content_posneg": article_content_posnegs,
-            "parent_comment_content_posneg": parent_comment_content_posnegs,
-            "comment_content_posneg": comment_content_posnegs,
-        }
-    )
-    # ポジティブを1、中立を0、ネガティブを-1に変換
-    mapping = {2: -1, 1: 0, 0: 1}
 
-    df_posnegs[user_id] = df_posnegs[user_id].applymap(lambda x: mapping.get(x, x))
+    fig, ax = plt.subplots()
 
-# %%
-df_posnegs.keys()
-# %%
-df_posnegs[41]
-# %%
-df_posnegs[41][
-    # df_posnegs[41]["parent_comment_content_posneg"].isnull()
-    df_posnegs[41]["article_content_posneg"].isnull()
-]
-# %%
-sns.scatterplot(
-    data=df_posnegs[41],
-    x=df_posnegs[41].index,
-    y="comment_content_posneg",
-    hue="article_content_posneg",
-)
+    ax.set_title(f"user_id: {user_id}")
+    ax.set_xlabel("posted time")
+    ax.set_ylabel("comment sentiment scalar")
+    ax.set_ylim(-1.1, 1.1)
+    ax.tick_params(axis="x", rotation=45)
+
+    ax.plot(df_user["normalized_posted_time"], df_user["comment_sentiment_scalar"])
 # %%
