@@ -94,6 +94,5 @@ for user_id in user_ids:
     ax.set_ylim(-1.1, 1.1)
     ax.tick_params(axis="x", rotation=45)
 
-    # ? user_id:89 を可視化すると逆行するデータが観察された。年をまたいでスクレイピングしたことによるバグか
     ax.plot(df_user["normalized_posted_time"], df_user["comment_sentiment_scalar"])
 # %%
