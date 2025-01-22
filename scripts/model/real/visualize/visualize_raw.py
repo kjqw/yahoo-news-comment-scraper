@@ -81,6 +81,7 @@ user_ids = filtered_users.index
 # %%
 value_counts
 # %%
+fig_ax_dict = {}
 for user_id in user_ids:
     df_user = df_training_data_vectorized_sentiment[
         df_training_data_vectorized_sentiment["user_id"] == user_id
@@ -95,4 +96,9 @@ for user_id in user_ids:
     ax.tick_params(axis="x", rotation=45)
 
     ax.plot(df_user["normalized_posted_time"], df_user["comment_sentiment_scalar"])
+
+    fig_ax_dict[user_id] = (fig, ax)
+    plt.close(fig)
+# %%
+fig_ax_dict[8][0]
 # %%
