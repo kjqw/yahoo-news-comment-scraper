@@ -158,8 +158,10 @@ for user_id in user_ids:
     fig_ax_dict[user_id] = (fig, ax)
     plt.close(fig)
 
-    break
 fig_ax_dict[user_id][0]
 # %%
-model.__class__.__name__
+# プロットを保存
+image_path = Path(__file__).parent / "images"
+for user_id, (fig, ax) in fig_ax_dict.items():
+    fig.savefig(f"{image_path}/{model.__class__.__name__}_{user_id}.png")
 # %%
