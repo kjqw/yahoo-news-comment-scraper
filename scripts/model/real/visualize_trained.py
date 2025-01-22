@@ -61,9 +61,9 @@ user_ids
 # %%
 value_counts
 # %%
-# DATA_PATH = "data/20250122125914"
-# DATA_PATH = "data/20250122144224"
-DATA_PATH = "data/20250122151749"
+# DATA_PATH = "data/20250122165142"  # nn
+# DATA_PATH = "data/20250122170943"  # linear
+DATA_PATH = "data/20250122172941"  # diff
 
 fig_ax_dict = {}
 for user_id in user_ids:
@@ -162,10 +162,11 @@ for user_id in user_ids:
     fig_ax_dict[user_id] = (fig, ax)
     plt.close(fig)
 
-fig_ax_dict[user_id][0]
 # %%
 # プロットを保存
-image_path = Path(__file__).parent / "images"
+# image_path = Path(__file__).parent / "images/linear"
+image_path = Path(__file__).parent / "images/diff"
+# image_path = Path(__file__).parent / "images/nn"
 for user_id, (fig, ax) in fig_ax_dict.items():
     fig.savefig(f"{image_path}/{model.__class__.__name__}_{user_id}.png")
 # %%
