@@ -250,7 +250,6 @@ for user_id in user_ids:
         json.dump({"train_loss": train_loss, "val_loss": val_loss}, f, indent=4)
     # モデルを保存
     torch.save(model, MODEL_PATH / f"model_{user_id}.pt")
-    break
 
 SETTINGS["model"] = model.__class__.__name__
 # 設定を保存
