@@ -48,6 +48,19 @@ df = pd.DataFrame(training_data_vectorized_sentiment, columns=COLUMN_NAMES)
 # ユーザーIDの一覧を取得
 user_ids = df["user_id"].unique()
 
+# %%
+"""
+`scripts/scraping/main_user.py`の
+# user_linkからuser_idを特定して、commentsテーブルにuser_idを追加
+のセルを実行した際に余計なuser_idが追加されているので、それを削除する。
+コメント数が1のものが紛れ込んでおり、1ステップ前と後のデータを取得できないので訓練時にエラーが起きた。
+"""
+# 出現回数が100以上のものをフィルタリング
+value_counts = df["user_id"].value_counts()
+filtered_users = value_counts[value_counts >= 100]
+user_ids = filtered_users.index
+# %%
+
 
 # %%
 def split_dataset(dataset: TensorDataset, split_ratio: float):
