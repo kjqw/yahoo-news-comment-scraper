@@ -106,7 +106,7 @@ for user_id in user_ids:
             parent_comment_content_vector,
             comment_content_vector,
         )
-        pred_states.append(pred_state.tolist()[0])
+        pred_states.append(pred_state.tolist())
 
     df_user["pred_state"] = pred_states
 
