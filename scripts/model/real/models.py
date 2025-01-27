@@ -47,12 +47,15 @@ class LinearModel(nn.Module):
         torch.Tensor
             予測された次の状態。
         """
-        pred_state = torch.tanh(
+        pred_state = (
             torch.matmul(parent_article_state, self.W_p.T)
             + torch.matmul(parent_comment_state, self.W_q.T)
             + torch.matmul(previous_state, self.W_s.T)
             + self.b.T
         )
+
+        # 出力を softmax で正規化し、確率分布を生成
+        pred_state = torch.softmax(pred_state, dim=-1)
 
         if self.is_discrete:
             # 出力を離散化
@@ -98,12 +101,15 @@ class DiffModel(nn.Module):
         parent_comment_state: torch.Tensor,
         previous_state: torch.Tensor,
     ):
-        pred_state = torch.tanh(
+        pred_state = (
             torch.matmul(parent_article_state - previous_state, self.W_p.T)
             + torch.matmul(parent_comment_state - previous_state, self.W_q.T)
             + torch.matmul(previous_state, self.W_s.T)
             + self.b.T
         )
+
+        # 出力を softmax で正規化し、確率分布を生成
+        pred_state = torch.softmax(pred_state, dim=-1)
 
         if self.is_discrete:
             # 出力を離散化
