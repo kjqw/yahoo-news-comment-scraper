@@ -177,6 +177,7 @@ for image_path, data_path in DATA_PATHS:
         # )
 
         ax.legend()
+        fig.tight_layout()
 
         fig_ax_dict[user_id] = (fig, ax)
     #     plt.close(fig)
