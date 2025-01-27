@@ -61,112 +61,129 @@ user_ids
 # %%
 value_counts
 # %%
-# DATA_PATH = "data/20250122165142"  # nn
-# DATA_PATH = "data/20250122170943"  # linear
-DATA_PATH = "data/20250122172941"  # diff
+IMAGE_PATH = Path(__file__).parent / "images"
+DATA_PATH = Path(__file__).parent / "data"
+
+# TODO 手動で指定は面倒
+DATA_PATHS = [
+    # # ランダムなデータで学習
+    # (IMAGE_PATH / "linear", DATA_PATH / "20250122170943"),  # linear
+    # (IMAGE_PATH / "diff", DATA_PATH / "20250122172941"),  # diff
+    # (IMAGE_PATH / "nn", DATA_PATH / "20250122165142"),  # nn
+    # 過去のデータで学習、最新のデータで評価
+    (IMAGE_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
+    (IMAGE_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
+    (IMAGE_PATH / "1/nn", DATA_PATH / "20250126162942"),  # nn
+    # # linear, diff モデルのtanhをsoftmaxに変更
+    # (IMAGE_PATH / "2/linear", DATA_PATH / ""),  # linear
+    # (IMAGE_PATH / "2/diff", DATA_PATH / ""),  # diff
+    # (IMAGE_PATH / "2/nn", DATA_PATH / ""),  # nn
+]
 
 fig_ax_dict = {}
-for user_id in user_ids:
-    # モデルを読み込む
-    model = torch.load(f"{DATA_PATH}/models/model_{user_id}.pt")
-    model.to("cpu")
-    model.eval()
+for image_path, data_path in DATA_PATHS:
+    for user_id in user_ids:
+        # モデルを読み込む
+        model = torch.load(f"{data_path}/models/model_{user_id}.pt")
+        model.to("cpu")
+        model.eval()
 
-    df_user = df[df["user_id"] == user_id]
+        df_user = df[df["user_id"] == user_id]
+        # df_user = df_user[: int(0.2 * len(df_user))]  # 前半の訓練データを使用
+        # df_user = df_user[int(0.8 * len(df_user)) :]  # 後半の評価データを使用
 
-    pred_states = [[2, 2, 2]]
-    for (
-        article_content_vector,
-        parent_comment_content_vector,
-        comment_content_vector,
-        comment_content_vector_next,
-    ) in zip(
-        df_user["article_content_vector"][:-1],
-        df_user["parent_comment_content_vector"][:-1],
-        df_user["comment_content_vector"][:-1],
-        df_user["comment_content_vector"][1:],
-    ):
-        article_content_vector = torch.tensor(
-            article_content_vector, dtype=torch.float32
-        )
-        parent_comment_content_vector = (
-            torch.tensor(parent_comment_content_vector, dtype=torch.float32)
-            if parent_comment_content_vector is not None
-            else torch.tensor([0, 0, 0], dtype=torch.float32)
-        )
-        comment_content_vector = torch.tensor(
-            comment_content_vector, dtype=torch.float32
-        )
-        comment_content_vector_next = torch.tensor(
-            comment_content_vector_next, dtype=torch.float32
-        )
-
-        pred_state = model(
+        pred_states = [[2, 2, 2]]
+        for (
             article_content_vector,
             parent_comment_content_vector,
             comment_content_vector,
+            comment_content_vector_next,
+        ) in zip(
+            df_user["article_content_vector"][:-1],
+            df_user["parent_comment_content_vector"][:-1],
+            df_user["comment_content_vector"][:-1],
+            df_user["comment_content_vector"][1:],
+        ):
+            article_content_vector = torch.tensor(
+                article_content_vector, dtype=torch.float32
+            )
+            parent_comment_content_vector = (
+                torch.tensor(parent_comment_content_vector, dtype=torch.float32)
+                if parent_comment_content_vector is not None
+                else torch.tensor([0, 0, 0], dtype=torch.float32)
+            )
+            comment_content_vector = torch.tensor(
+                comment_content_vector, dtype=torch.float32
+            )
+            comment_content_vector_next = torch.tensor(
+                comment_content_vector_next, dtype=torch.float32
+            )
+
+            pred_state = model(
+                article_content_vector,
+                parent_comment_content_vector,
+                comment_content_vector,
+            )
+
+            if model.__class__.__name__ == "NNModel":
+                pred_states.append(pred_state.tolist())
+            else:
+                pred_states.append(pred_state.tolist()[0])
+
+        df_user["pred_state"] = pred_states
+
+        df_user["comment_sentiment_scalar"] = df_user["comment_content_vector"].apply(
+            lambda vec: float(vec[0] - vec[2])
+            # lambda vec: float(vec[1])
         )
-        # pred_states.append(pred_state.tolist())
-        pred_states.append(pred_state.tolist()[0])
-        # モデルの設計によって選択すべきものが異なる
-        # TODO 統一したい
+        df_user["pred_state_scalar"] = df_user["pred_state"].apply(
+            lambda vec: float(vec[0] - vec[2])
+            # lambda vec: float(vec[1])
+        )
 
-    df_user["pred_state"] = pred_states
+        fig, ax = plt.subplots()
 
-    df_user["comment_sentiment_scalar"] = df_user["comment_content_vector"].apply(
-        lambda vec: float(vec[0] - vec[2])
-        # lambda vec: float(vec[1])
-    )
-    df_user["pred_state_scalar"] = df_user["pred_state"].apply(
-        lambda vec: float(vec[0] - vec[2])
-        # lambda vec: float(vec[1])
-    )
+        ax.set_title(f"user_id: {user_id}")
+        ax.set_xlabel("posted time")
+        ax.set_ylabel("comment sentiment scalar")
+        ax.set_ylim(-1.1, 1.1)
+        ax.tick_params(axis="x", rotation=45)
 
-    fig, ax = plt.subplots()
+        # 実測値のプロット
+        ax.plot(
+            df_user["normalized_posted_time"],
+            df_user["comment_sentiment_scalar"],
+            label="actual",
+        )
+        # 予測値のプロット
+        for i in range(1, len(df_user)):
+            ax.plot(
+                [
+                    df_user["normalized_posted_time"].iloc[i - 1],
+                    df_user["normalized_posted_time"].iloc[i],
+                ],
+                [
+                    df_user["comment_sentiment_scalar"].iloc[i - 1],
+                    df_user["pred_state_scalar"].iloc[i],
+                ],
+                color="red",
+                linestyle="--",
+                label="predicted",
+            )
+        # ax.plot(
+        #     df_user["normalized_posted_time"][1:],
+        #     df_user["pred_state_scalar"][1:],
+        #     label="predicted",
+        # )
 
-    ax.set_title(f"user_id: {user_id}")
-    ax.set_xlabel("posted time")
-    ax.set_ylabel("comment sentiment scalar")
-    ax.set_ylim(-1.1, 1.1)
-    ax.tick_params(axis="x", rotation=45)
+        ax.legend()
 
-    # 実測値のプロット
-    ax.plot(
-        df_user["normalized_posted_time"],
-        df_user["comment_sentiment_scalar"],
-        label="actual",
-    )
-    # 予測値のプロット
-    # for i in range(1, len(df_user)):
-    #     ax.plot(
-    #         [
-    #             df_user["normalized_posted_time"].iloc[i - 1],
-    #             df_user["normalized_posted_time"].iloc[i],
-    #         ],
-    #         [
-    #             df_user["comment_sentiment_scalar"].iloc[i - 1],
-    #             df_user["pred_state_scalar"].iloc[i],
-    #         ],
-    #         color="red",
-    #         linestyle="--",
-    #         label="predicted",
-    #     )
-    ax.plot(
-        df_user["normalized_posted_time"][1:],
-        df_user["pred_state_scalar"][1:],
-        label="predicted",
-    )
+        fig_ax_dict[user_id] = (fig, ax)
+    #     plt.close(fig)
 
-    ax.legend()
-
-    fig_ax_dict[user_id] = (fig, ax)
-    plt.close(fig)
-
-# %%
-# プロットを保存
-# image_path = Path(__file__).parent / "images/linear"
-image_path = Path(__file__).parent / "images/diff"
-# image_path = Path(__file__).parent / "images/nn"
-for user_id, (fig, ax) in fig_ax_dict.items():
-    fig.savefig(f"{image_path}/{model.__class__.__name__}_{user_id}.png")
+    # # プロットを保存
+    # for user_id, (fig, ax) in fig_ax_dict.items():
+    #     save_path = image_path / f"{model.__class__.__name__}_{user_id}.png"
+    #     save_path.parent.mkdir(parents=True, exist_ok=True)
+    #     fig.savefig(save_path)
 # %%
