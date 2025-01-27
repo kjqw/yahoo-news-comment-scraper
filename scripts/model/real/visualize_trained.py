@@ -66,18 +66,19 @@ DATA_PATH = Path(__file__).parent / "data"
 
 # TODO 手動で指定は面倒
 DATA_PATHS = [
-    # # ランダムなデータで学習
+    # * ランダムなデータで学習
     # (IMAGE_PATH / "linear", DATA_PATH / "20250122170943"),  # linear
     # (IMAGE_PATH / "diff", DATA_PATH / "20250122172941"),  # diff
     # (IMAGE_PATH / "nn", DATA_PATH / "20250122165142"),  # nn
-    # 過去のデータで学習、最新のデータで評価
-    (IMAGE_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
-    (IMAGE_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
-    (IMAGE_PATH / "1/nn", DATA_PATH / "20250126162942"),  # nn
-    # # linear, diff モデルのtanhをsoftmaxに変更
-    # (IMAGE_PATH / "2/linear", DATA_PATH / ""),  # linear
-    # (IMAGE_PATH / "2/diff", DATA_PATH / ""),  # diff
-    # (IMAGE_PATH / "2/nn", DATA_PATH / ""),  # nn
+    # * 過去のデータで学習、最新のデータで評価
+    # (IMAGE_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
+    # (IMAGE_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
+    # (IMAGE_PATH / "1/nn", DATA_PATH / "20250126162942"),  # nn
+    # * linear, diff モデルのtanhをsoftmaxに変更
+    # (IMAGE_PATH / "2/linear", DATA_PATH / "20250127110129"),  # linear
+    # (IMAGE_PATH / "2/diff", DATA_PATH / "20250127111017"),  # diff
+    # * nnの次元数を [128,128] -> [96] に変更
+    # (IMAGE_PATH / "3/nn", DATA_PATH / "20250126162942"),  # nn
 ]
 
 fig_ax_dict = {}
@@ -89,8 +90,8 @@ for image_path, data_path in DATA_PATHS:
         model.eval()
 
         df_user = df[df["user_id"] == user_id]
-        # df_user = df_user[: int(0.2 * len(df_user))]  # 前半の訓練データを使用
-        # df_user = df_user[int(0.8 * len(df_user)) :]  # 後半の評価データを使用
+        # df_user = df_user[: int(0.8 * len(df_user))]  # 前半の訓練データを使用
+        df_user = df_user[int(0.8 * len(df_user)) :]  # 後半の評価データを使用
 
         pred_states = [[2, 2, 2]]
         for (
@@ -156,35 +157,37 @@ for image_path, data_path in DATA_PATHS:
             label="actual",
         )
         # 予測値のプロット
-        for i in range(1, len(df_user)):
-            ax.plot(
-                [
-                    df_user["normalized_posted_time"].iloc[i - 1],
-                    df_user["normalized_posted_time"].iloc[i],
-                ],
-                [
-                    df_user["comment_sentiment_scalar"].iloc[i - 1],
-                    df_user["pred_state_scalar"].iloc[i],
-                ],
-                color="red",
-                linestyle="--",
-                label="predicted",
-            )
-        # ax.plot(
-        #     df_user["normalized_posted_time"][1:],
-        #     df_user["pred_state_scalar"][1:],
-        #     label="predicted",
-        # )
+        # for i in range(1, len(df_user)):
+        #     ax.plot(
+        #         [
+        #             df_user["normalized_posted_time"].iloc[i - 1],
+        #             df_user["normalized_posted_time"].iloc[i],
+        #         ],
+        #         [
+        #             df_user["comment_sentiment_scalar"].iloc[i - 1],
+        #             df_user["pred_state_scalar"].iloc[i],
+        #         ],
+        #         color="red",
+        #         linestyle="--",
+        #         label="predicted" if i == 1 else None,
+        #     )
+        ax.plot(
+            df_user["normalized_posted_time"][1:],
+            df_user["pred_state_scalar"][1:],
+            label="predicted",
+        )
 
         ax.legend()
         fig.tight_layout()
 
         fig_ax_dict[user_id] = (fig, ax)
-    #     plt.close(fig)
 
-    # # プロットを保存
-    # for user_id, (fig, ax) in fig_ax_dict.items():
-    #     save_path = image_path / f"{model.__class__.__name__}_{user_id}.png"
-    #     save_path.parent.mkdir(parents=True, exist_ok=True)
-    #     fig.savefig(save_path)
+        plt.close(fig)
+
+    # プロットを保存
+    for user_id, (fig, ax) in fig_ax_dict.items():
+        save_path = image_path / f"{model.__class__.__name__}_{user_id}.png"
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path)
+
 # %%

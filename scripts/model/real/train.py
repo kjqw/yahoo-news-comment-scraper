@@ -265,7 +265,7 @@ for user_id in user_ids:
     # モデルを初期化
     # model = LinearModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
     # model = DiffModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
-    model = NNModel(STATE_DIM, IS_DISCRETE, [128, 128]).to(DEVICE)
+    model = NNModel(STATE_DIM, IS_DISCRETE, [96]).to(DEVICE)
 
     # モデルを訓練し、損失の履歴を取得
     train_loss, val_loss = train_and_evaluate(
