@@ -7,13 +7,13 @@ from pathlib import Path
 import pandas as pd
 import torch
 import torch.nn as nn
-from models import DiffModel, LinearModel, NNModel
+from models import DiffModel, NNModel, SimpleModel
 from schedulefree import RAdamScheduleFree
 from torch.utils.data import DataLoader, Subset, TensorDataset
 from tqdm import tqdm
 
 # データベースモジュールのパスをシステムパスに追加
-sys.path.append(str(Path(__file__).parents[2]))
+sys.path.append(str(Path(__file__).parents[3]))
 from db_manager import execute_query
 
 # %%
@@ -50,6 +50,9 @@ df = pd.DataFrame(training_data_vectorized_sentiment, columns=COLUMN_NAMES)
 user_ids = df["user_id"].unique()
 
 # %%
+# parent_comment_idがNULLのデータのみを抽出
+df = df[df["parent_comment_id"].isnull()]
+# %%
 """
 `scripts/scraping/main_user.py`の
 # user_linkからuser_idを特定して、commentsテーブルにuser_idを追加
@@ -60,12 +63,9 @@ user_ids = df["user_id"].unique()
 value_counts = df["user_id"].value_counts()
 filtered_users = value_counts[value_counts >= 100]
 user_ids = filtered_users.index
-# %%
 
 
 # %%
-
-
 def split_dataset(
     dataset: TensorDataset,
     split_ratio: float,
@@ -153,14 +153,11 @@ def train_and_evaluate(
             # 訓練データのミニバッチ処理
             for (
                 parent_article_state,
-                parent_comment_state,
                 previous_state,
                 next_state,
             ) in train_loader:
                 optimizer.zero_grad()
-                pred_state = model(
-                    parent_article_state, parent_comment_state, previous_state
-                )
+                pred_state = model(parent_article_state, previous_state)
                 loss = criterion(pred_state, next_state)
                 loss.backward()
                 optimizer.step()
@@ -176,13 +173,10 @@ def train_and_evaluate(
                 epoch_val_loss = 0.0
                 for (
                     parent_article_state,
-                    parent_comment_state,
                     previous_state,
                     next_state,
                 ) in val_loader:
-                    pred_state = model(
-                        parent_article_state, parent_comment_state, previous_state
-                    )
+                    pred_state = model(parent_article_state, previous_state)
                     loss = criterion(pred_state, next_state)
                     epoch_val_loss += loss.item()
 
@@ -201,14 +195,12 @@ def train_and_evaluate(
 # %%
 # モデルの設定と学習
 STATE_DIM = 3
-IS_DISCRETE = False
 SHOULD_SHUFFLE = False
 BATCH_SIZE = 8
-NUM_EPOCHS = 500
+NUM_EPOCHS = 200
 SPLIT_RATIO = 0.8
 SETTINGS = {
     "state_dim": STATE_DIM,
-    "is_discrete": IS_DISCRETE,
     "should_shuffle": SHOULD_SHUFFLE,
     "batch_size": BATCH_SIZE,
     "num_epochs": NUM_EPOCHS,
@@ -241,13 +233,6 @@ for user_id in user_ids:
             dtype=torch.float32,
         ).to(DEVICE),
         torch.tensor(
-            [
-                i if i is not None else [0, 0, 0]
-                for i in user_data_sorted["parent_comment_content_vector"][:-1]
-            ],
-            dtype=torch.float32,
-        ).to(DEVICE),
-        torch.tensor(
             [i for i in user_data_sorted["comment_content_vector"][:-1]],
             dtype=torch.float32,
         ).to(DEVICE),
@@ -263,9 +248,9 @@ for user_id in user_ids:
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # モデルを初期化
-    # model = LinearModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
-    # model = DiffModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
-    model = NNModel(STATE_DIM, IS_DISCRETE, [96]).to(DEVICE)
+    # model = SimpleModel(STATE_DIM).to(DEVICE)
+    # model = DiffModel(STATE_DIM).to(DEVICE)
+    model = NNModel(STATE_DIM, [128, 128]).to(DEVICE)
 
     # モデルを訓練し、損失の履歴を取得
     train_loss, val_loss = train_and_evaluate(
