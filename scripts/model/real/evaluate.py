@@ -74,13 +74,14 @@ DATA_PATHS = [
     # (RESULT_PATH / "diff", DATA_PATH / "20250122172941"),  # diff
     # (RESULT_PATH / "nn", DATA_PATH / "20250122165142"),  # nn
     # * 過去のデータで学習、最新のデータで評価
-    (RESULT_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
-    (RESULT_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
+    # (RESULT_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
+    # (RESULT_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
     (RESULT_PATH / "1/nn", DATA_PATH / "20250126162942"),  # nn
     # * linear, diff モデルのtanhをsoftmaxに変更
-    # (RESULT_PATH / "2/linear", DATA_PATH / "20250127110129"),  # linear
-    # (RESULT_PATH / "2/diff", DATA_PATH / "20250127111017"),  # diff
-    # (RESULT_PATH / "2/nn", DATA_PATH / "20250126162942"),  # nn
+    (RESULT_PATH / "2/linear", DATA_PATH / "20250127110129"),  # linear
+    (RESULT_PATH / "2/diff", DATA_PATH / "20250127111017"),  # diff
+    # * nnの次元数を [128,128] -> [96] に変更
+    # (RESULT_PATH / "3/nn", DATA_PATH / "20250126162942"),  # nn
 ]
 
 result_dict = {}
@@ -171,17 +172,30 @@ for key, df_user in result_dict.items():
     )
     diffs[tmp_key].append((cos_mean, cos_std, euc_mean, euc_std))
 
-    print(f"cosine_similarity mean: {df_user['cosine_similarity'].mean()}")
-    print(f"cosine_similarity std: {df_user['cosine_similarity'].std()}")
-    print(f"euclidean_distance mean: {df_user['euclidean_distance'].mean()}")
-    print(f"euclidean_distance std: {df_user['euclidean_distance'].std()}")
-    print()
-    break
-
 # %%
-print(f"cosine_similarity mean: {df_user['cosine_similarity'].mean()}")
-print(f"cosine_similarity std: {df_user['cosine_similarity'].std()}")
-print(f"euclidean_distance mean: {df_user['euclidean_distance'].mean()}")
-print(f"euclidean_distance std: {df_user['euclidean_distance'].std()}")
-
+diffs["linear"]
+# %%
+diffs["diff"]
+# %%
+diffs["nn"]
+# %%
+cos_sim_mean_linear = np.array([x[0] for x in diffs["linear"]])
+cos_sim_std_linear = np.array([x[1] for x in diffs["linear"]])
+euc_dis_mean_linear = np.array([x[2] for x in diffs["linear"]])
+euc_dis_std_linear = np.array([x[3] for x in diffs["linear"]])
+cos_sim_mean_linear.mean(), cos_sim_std_linear.mean(), euc_dis_mean_linear.mean(), euc_dis_std_linear.mean()
+# %%
+cos_sim_mean_diff = np.array([x[0] for x in diffs["diff"]])
+cos_sim_std_diff = np.array([x[1] for x in diffs["diff"]])
+euc_dis_mean_diff = np.array([x[2] for x in diffs["diff"]])
+euc_dis_std_diff = np.array([x[3] for x in diffs["diff"]])
+cos_sim_mean_diff.mean(), cos_sim_std_diff.mean(), euc_dis_mean_diff.mean(), euc_dis_std_diff.mean()
+# %%
+cos_sim_mean_nn = np.array([x[0] for x in diffs["nn"]])
+cos_sim_std_nn = np.array([x[1] for x in diffs["nn"]])
+euc_dis_mean_nn = np.array([x[2] for x in diffs["nn"]])
+euc_dis_std_nn = np.array([x[3] for x in diffs["nn"]])
+cos_sim_mean_nn.mean(), cos_sim_std_nn.mean(), euc_dis_mean_nn.mean(), euc_dis_std_nn.mean()
+# %%
+sum(value_counts)
 # %%
