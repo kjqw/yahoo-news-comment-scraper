@@ -1,12 +1,15 @@
 # %%
 import json
 import sys
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 from matplotlib import pyplot as plt
+from sklearn.metrics.pairwise import cosine_similarity
 
 # データベースモジュールのパスをシステムパスに追加
 sys.path.append(str(Path(__file__).parents[2]))
@@ -61,28 +64,28 @@ user_ids
 # %%
 value_counts
 # %%
-IMAGE_PATH = Path(__file__).parent / "images"
 DATA_PATH = Path(__file__).parent / "data"
+RESULT_PATH = DATA_PATH / "predicition_results"
 
 # TODO 手動で指定は面倒
 DATA_PATHS = [
     # * ランダムなデータで学習
-    # (IMAGE_PATH / "linear", DATA_PATH / "20250122170943"),  # linear
-    # (IMAGE_PATH / "diff", DATA_PATH / "20250122172941"),  # diff
-    # (IMAGE_PATH / "nn", DATA_PATH / "20250122165142"),  # nn
+    # (RESULT_PATH / "linear", DATA_PATH / "20250122170943"),  # linear
+    # (RESULT_PATH / "diff", DATA_PATH / "20250122172941"),  # diff
+    # (RESULT_PATH / "nn", DATA_PATH / "20250122165142"),  # nn
     # * 過去のデータで学習、最新のデータで評価
-    # (IMAGE_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
-    # (IMAGE_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
-    # (IMAGE_PATH / "1/nn", DATA_PATH / "20250126162942"),  # nn
+    # (RESULT_PATH / "1/linear", DATA_PATH / "20250126161128"),  # linear
+    # (RESULT_PATH / "1/diff", DATA_PATH / "20250126162046"),  # diff
+    (RESULT_PATH / "1/nn", DATA_PATH / "20250126162942"),  # nn
     # * linear, diff モデルのtanhをsoftmaxに変更
-    # (IMAGE_PATH / "2/linear", DATA_PATH / "20250127110129"),  # linear
-    # (IMAGE_PATH / "2/diff", DATA_PATH / "20250127111017"),  # diff
+    (RESULT_PATH / "2/linear", DATA_PATH / "20250127110129"),  # linear
+    (RESULT_PATH / "2/diff", DATA_PATH / "20250127111017"),  # diff
     # * nnの次元数を [128,128] -> [96] に変更
-    # (IMAGE_PATH / "3/nn", DATA_PATH / "20250126162942"),  # nn
+    # (RESULT_PATH / "3/nn", DATA_PATH / "20250126162942"),  # nn
 ]
 
-fig_ax_dict = {}
-for image_path, data_path in DATA_PATHS:
+result_dict = {}
+for result_path, data_path in DATA_PATHS:
     for user_id in user_ids:
         # モデルを読み込む
         model = torch.load(f"{data_path}/models/model_{user_id}.pt")
@@ -93,7 +96,7 @@ for image_path, data_path in DATA_PATHS:
         # df_user = df_user[: int(0.8 * len(df_user))]  # 前半の訓練データを使用
         df_user = df_user[int(0.8 * len(df_user)) :]  # 後半の評価データを使用
 
-        pred_states = [[2, 2, 2]]
+        pred_states = [[0, 0, 0]]
         for (
             article_content_vector,
             parent_comment_content_vector,
@@ -133,61 +136,66 @@ for image_path, data_path in DATA_PATHS:
 
         df_user["pred_state"] = pred_states
 
-        df_user["comment_sentiment_scalar"] = df_user["comment_content_vector"].apply(
-            lambda vec: float(vec[0] - vec[2])
-            # lambda vec: float(vec[1])
+        # comment_content_vectorとpred_stateの列をnp.arrayに変換
+        df_user["comment_content_vector"] = df_user["comment_content_vector"].apply(
+            lambda x: np.array(x)
         )
-        df_user["pred_state_scalar"] = df_user["pred_state"].apply(
-            lambda vec: float(vec[0] - vec[2])
-            # lambda vec: float(vec[1])
+        df_user["pred_state"] = df_user["pred_state"].apply(lambda x: np.array(x))
+
+        # 実測値と予測値の差を計算
+        df_user["cosine_similarity"] = df_user.apply(
+            lambda x: cosine_similarity(
+                x["comment_content_vector"].reshape(1, -1),
+                x["pred_state"].reshape(1, -1),
+            )[0][0],
+            axis=1,
         )
-
-        fig, ax = plt.subplots()
-
-        ax.set_title(f"user_id: {user_id}")
-        ax.set_xlabel("posted time")
-        ax.set_ylabel("comment sentiment scalar")
-        ax.set_ylim(-1.1, 1.1)
-        ax.tick_params(axis="x", rotation=45)
-
-        # 実測値のプロット
-        ax.plot(
-            df_user["normalized_posted_time"],
-            df_user["comment_sentiment_scalar"],
-            label="actual",
-        )
-        # 予測値のプロット
-        # for i in range(1, len(df_user)):
-        #     ax.plot(
-        #         [
-        #             df_user["normalized_posted_time"].iloc[i - 1],
-        #             df_user["normalized_posted_time"].iloc[i],
-        #         ],
-        #         [
-        #             df_user["comment_sentiment_scalar"].iloc[i - 1],
-        #             df_user["pred_state_scalar"].iloc[i],
-        #         ],
-        #         color="red",
-        #         linestyle="--",
-        #         label="predicted" if i == 1 else None,
-        #     )
-        ax.plot(
-            df_user["normalized_posted_time"][1:],
-            df_user["pred_state_scalar"][1:],
-            label="predicted",
+        df_user["euclidean_distance"] = df_user.apply(
+            lambda x: np.linalg.norm(x["comment_content_vector"] - x["pred_state"]),
+            axis=1,
         )
 
-        ax.legend()
-        fig.tight_layout()
+        # ユーザーごとの結果を保存
+        result_dict[f"{result_path}_{user_id}"] = df_user
 
-        fig_ax_dict[user_id] = (fig, ax)
 
-        plt.close(fig)
+# %%
+diffs = defaultdict(list)
+for key, df_user in result_dict.items():
+    tmp = key.split("/")[-1]
+    tmp_key = tmp.split("_")[0]
+    cos_mean, cos_std, euc_mean, euc_std = (
+        df_user["cosine_similarity"].mean(),
+        df_user["cosine_similarity"].std(),
+        df_user["euclidean_distance"].mean(),
+        df_user["euclidean_distance"].std(),
+    )
+    diffs[tmp_key].append((cos_mean, cos_std, euc_mean, euc_std))
 
-    # プロットを保存
-    for user_id, (fig, ax) in fig_ax_dict.items():
-        save_path = image_path / f"{model.__class__.__name__}_{user_id}.png"
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(save_path)
-
+# %%
+diffs["linear"]
+# %%
+diffs["diff"]
+# %%
+diffs["nn"]
+# %%
+cos_sim_mean_linear = np.array([x[0] for x in diffs["linear"]])
+cos_sim_std_linear = np.array([x[1] for x in diffs["linear"]])
+euc_dis_mean_linear = np.array([x[2] for x in diffs["linear"]])
+euc_dis_std_linear = np.array([x[3] for x in diffs["linear"]])
+cos_sim_mean_linear.mean(), cos_sim_std_linear.mean(), euc_dis_mean_linear.mean(), euc_dis_std_linear.mean()
+# %%
+cos_sim_mean_diff = np.array([x[0] for x in diffs["diff"]])
+cos_sim_std_diff = np.array([x[1] for x in diffs["diff"]])
+euc_dis_mean_diff = np.array([x[2] for x in diffs["diff"]])
+euc_dis_std_diff = np.array([x[3] for x in diffs["diff"]])
+cos_sim_mean_diff.mean(), cos_sim_std_diff.mean(), euc_dis_mean_diff.mean(), euc_dis_std_diff.mean()
+# %%
+cos_sim_mean_nn = np.array([x[0] for x in diffs["nn"]])
+cos_sim_std_nn = np.array([x[1] for x in diffs["nn"]])
+euc_dis_mean_nn = np.array([x[2] for x in diffs["nn"]])
+euc_dis_std_nn = np.array([x[3] for x in diffs["nn"]])
+cos_sim_mean_nn.mean(), cos_sim_std_nn.mean(), euc_dis_mean_nn.mean(), euc_dis_std_nn.mean()
+# %%
+sum(value_counts)
 # %%

@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from models import DiffModel, LinearModel, NNModel
 from schedulefree import RAdamScheduleFree
-from torch.utils.data import DataLoader, TensorDataset, random_split
+from torch.utils.data import DataLoader, Subset, TensorDataset
 from tqdm import tqdm
 
 # データベースモジュールのパスをシステムパスに追加
@@ -64,7 +64,14 @@ user_ids = filtered_users.index
 
 
 # %%
-def split_dataset(dataset: TensorDataset, split_ratio: float):
+
+
+def split_dataset(
+    dataset: TensorDataset,
+    split_ratio: float,
+    should_shuffle: bool = True,
+    random_seed: int | None = None,
+) -> tuple[Subset, Subset]:
     """
     データセットを訓練用と評価用に分割する。
 
@@ -74,15 +81,33 @@ def split_dataset(dataset: TensorDataset, split_ratio: float):
         分割対象のデータセット。
     split_ratio : float
         訓練データセットの割合（例: 0.8 で 80% が訓練用）。
+    should_shuffle : bool, optional
+        分割時にデータをシャッフルするかどうか。
+    random_seed : int | None, optional
+        シャッフル時のランダムシード。
 
     Returns
     -------
     tuple[Subset, Subset]
         訓練用データセットと評価用データセット。
     """
-    train_size = int(len(dataset) * split_ratio)
-    val_size = len(dataset) - train_size
-    return random_split(dataset, [train_size, val_size])
+    dataset_size = len(dataset)
+    train_size = int(dataset_size * split_ratio)
+
+    if should_shuffle:
+        if random_seed is not None:
+            torch.manual_seed(random_seed)
+        indices = torch.randperm(dataset_size)
+    else:
+        indices = torch.arange(dataset_size)
+
+    train_indices = indices[:train_size]
+    val_indices = indices[train_size:]
+
+    train_dataset = Subset(dataset, train_indices)
+    val_dataset = Subset(dataset, val_indices)
+
+    return train_dataset, val_dataset
 
 
 def train_and_evaluate(
@@ -177,12 +202,14 @@ def train_and_evaluate(
 # モデルの設定と学習
 STATE_DIM = 3
 IS_DISCRETE = False
+SHOULD_SHUFFLE = False
 BATCH_SIZE = 8
 NUM_EPOCHS = 500
 SPLIT_RATIO = 0.8
 SETTINGS = {
     "state_dim": STATE_DIM,
     "is_discrete": IS_DISCRETE,
+    "should_shuffle": SHOULD_SHUFFLE,
     "batch_size": BATCH_SIZE,
     "num_epochs": NUM_EPOCHS,
     "split_ratio": SPLIT_RATIO,
@@ -231,14 +258,14 @@ for user_id in user_ids:
     )
 
     # データセットを訓練用と評価用に分割
-    train_dataset, val_dataset = split_dataset(dataset, SPLIT_RATIO)
+    train_dataset, val_dataset = split_dataset(dataset, SPLIT_RATIO, SHOULD_SHUFFLE)
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # モデルを初期化
     # model = LinearModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
     # model = DiffModel(STATE_DIM, IS_DISCRETE).to(DEVICE)
-    model = NNModel(STATE_DIM, IS_DISCRETE, [128, 128]).to(DEVICE)
+    model = NNModel(STATE_DIM, IS_DISCRETE, [96]).to(DEVICE)
 
     # モデルを訓練し、損失の履歴を取得
     train_loss, val_loss = train_and_evaluate(
